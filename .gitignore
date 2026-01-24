@@ -1,0 +1,7 @@
+
+.idea/
+*.log
+
+/data/
+
+/dist/

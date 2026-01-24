@@ -1,0 +1,13 @@
+---
+log:
+  level: debug
+  format: json
+ollama:
+  endpoint: http://192.168.0.185:11434
+  embedding:
+#    model: mxbai-embed-large
+    model: nomic-embed-text
+    chunk_size: 4096
+    chunk_overlap: 400
+
+#    encoding_name: cl100k_base
