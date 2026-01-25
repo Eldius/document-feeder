@@ -46,3 +46,15 @@ func (r *Repository) ArticleByLink(_ context.Context, feedTitle, articleLink str
 	}
 	return nil, nil
 }
+
+func (r *Repository) SaveGeneratedCache(_ context.Context, answer *model.AnswerCache) error {
+	return r.db.Save(answer)
+}
+
+func (r *Repository) FindGeneratedCache(_ context.Context, id string) (*model.AnswerCache, error) {
+	var answer model.AnswerCache
+	if err := r.db.Select(q.Eq("ID", id)).First(&answer); err != nil {
+		return nil, fmt.Errorf("finding generated cache: %w", err)
+	}
+	return &answer, nil
+}

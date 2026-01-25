@@ -26,6 +26,14 @@ var (
 		Key:   "ollama.generation.model",
 		Value: "llama3:8b-instruct-q4_K_M",
 	}
+	OllamaGenerationCacheEnabledProp = setup.Prop{
+		Key:   "ollama.generation.cache_enabled",
+		Value: false,
+	}
+	OllamaGenerationCacheSimilarityThresholdProp = setup.Prop{
+		Key:   "ollama.generation.cache_similarity_threshold",
+		Value: 0.8,
+	}
 )
 
 func GetOllamaEndpoint() string {
@@ -46,4 +54,12 @@ func GetOllamaEmbeddingChunkOverlap() int {
 
 func GetOllamaGenerationModel() string {
 	return viper.GetString(OllamaGenerationModelProp.Key)
+}
+
+func GetOllamaGenerationCacheEnabled() bool {
+	return viper.GetBool(OllamaGenerationCacheEnabledProp.Key)
+}
+
+func GetOllamaGenerationCacheSimilarityThreshold() float32 {
+	return float32(viper.GetFloat64(OllamaGenerationCacheSimilarityThresholdProp.Key))
 }

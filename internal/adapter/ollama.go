@@ -1,11 +1,13 @@
 package adapter
 
-import "github.com/eldius/document-feed-embedder/internal/client"
+import (
+	"github.com/eldius/document-feed-embedder/internal/client/ollama"
+)
 
 type OllamaAdapter struct {
-	ollama *client.OllamaClient
+	ollama *ollama.OllamaClient
 }
 
-func NewOllamaAdapter(ollama *client.OllamaClient) *OllamaAdapter {
+func NewOllamaAdapter(ollama *ollama.OllamaClient) *OllamaAdapter {
 	return &OllamaAdapter{ollama: ollama}
 }

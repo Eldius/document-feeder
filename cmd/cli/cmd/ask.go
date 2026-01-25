@@ -41,7 +41,11 @@ var askCmd = &cobra.Command{
 		fmt.Println("---")
 		fmt.Println(questionStyle.Render("Question: " + strings.Join(args, " ")))
 
-		cowsay.Cowsay(answerStyle.Render("Answer: " + answer))
+		if askOpts.cowSay {
+			cowsay.Cowsay(answerStyle.Render("Answer: " + answer))
+		} else {
+			fmt.Println(answerStyle.Render("Answer: " + answer))
+		}
 
 		fmt.Println()
 		fmt.Println()
@@ -51,6 +55,12 @@ var askCmd = &cobra.Command{
 		fmt.Println(footerStyle.Render(fmt.Sprintf("Time elapsed: %s", time.Since(start).String())))
 	},
 }
+
+var (
+	askOpts struct {
+		cowSay bool
+	}
+)
 
 func init() {
 	rootCmd.AddCommand(askCmd)
@@ -64,4 +74,5 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// askCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	askCmd.Flags().BoolVarP(&askOpts.cowSay, "cow-say", "c", false, "Use cowsay to render the answer")
 }

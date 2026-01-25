@@ -12,6 +12,12 @@ type SearchResult struct {
 	Embeddings       []float32
 }
 
+type AnswerCache struct {
+	ID       string `json:"id" storm:"id"`
+	Question string `json:"feedTitle" storm:"index"`
+	Answer   string `json:"answer"`
+}
+
 type Feed struct {
 	Title       string     `json:"title" storm:"unique"`
 	Description string     `json:"description"`

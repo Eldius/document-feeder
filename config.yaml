@@ -10,4 +10,8 @@ ollama:
     chunk_size: 2048
     chunk_overlap: 200
   generation:
-    model: llama3:8b-instruct-q4_K_M
+#    model: llama3:8b-instruct-q4_K_M
+    model: deepseek-r1:1.5b
+#    model: deepseek-r1:7b
+    enable_cache: true
+    cache_similarity_threshold: 0.8

@@ -25,6 +25,15 @@ builds:
       - linux
       - windows
       - darwin
+  - id: benchmarker-cli
+    main: ./cmd/benchmarker
+    binary: benchmarker-cli
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
 
 archives:
   - formats: [tar.gz]

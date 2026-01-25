@@ -27,6 +27,7 @@ var rootCmd = &cobra.Command{
 			config.OllamaEmbeddingBatchSizeProp,
 			config.OllamaEmbeddingChunkOverlapProp,
 			config.OllamaGenerationModelProp,
+			config.OllamaGenerationCacheEnabledProp,
 		),
 	),
 }

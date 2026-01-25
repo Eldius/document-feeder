@@ -4,7 +4,8 @@ import (
 	"context"
 	"embed"
 	"fmt"
-	"github.com/eldius/document-feed-embedder/internal/client"
+	"github.com/eldius/document-feed-embedder/internal/client/ollama"
+	"github.com/eldius/document-feed-embedder/internal/config"
 	"github.com/eldius/document-feed-embedder/internal/feed"
 	"github.com/eldius/document-feed-embedder/internal/model"
 	"github.com/eldius/document-feed-embedder/internal/persistence/chromem"
@@ -20,20 +21,24 @@ var (
 )
 
 type FeedAdapter struct {
-	r      *storm.Repository
-	docs   *chromem.DocumentVectorizer
-	p      feed.Parser
-	tmpl   *template.Template
-	ollama *client.OllamaClient
+	r                        *storm.Repository
+	docs                     *chromem.DocumentVectorizer
+	p                        feed.Parser
+	tmpl                     *template.Template
+	ollama                   *ollama.OllamaClient
+	cacheSimilarityThreshold float32
+	cacheEnabled             bool
 }
 
-func NewFeedAdapter(r *storm.Repository, p feed.Parser, docs *chromem.DocumentVectorizer, ollama *client.OllamaClient, tmpl *template.Template) *FeedAdapter {
+func NewFeedAdapter(r *storm.Repository, p feed.Parser, docs *chromem.DocumentVectorizer, ollama *ollama.OllamaClient, tmpl *template.Template, cacheSimilarityThreshold float32, cacheEnabled bool) *FeedAdapter {
 	return &FeedAdapter{
-		r:      r,
-		p:      p,
-		docs:   docs,
-		tmpl:   tmpl,
-		ollama: ollama,
+		r:                        r,
+		p:                        p,
+		docs:                     docs,
+		tmpl:                     tmpl,
+		ollama:                   ollama,
+		cacheEnabled:             cacheEnabled,
+		cacheSimilarityThreshold: cacheSimilarityThreshold,
 	}
 }
 
@@ -48,8 +53,10 @@ func NewDefaultAdapter() (*FeedAdapter, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parsing templates: %w", err)
 	}
-	ollama := client.NewOllamaClient()
-	return NewFeedAdapter(r, p, d, ollama, tmpl), nil
+	ollama := ollama.NewOllamaClient()
+	cacheEnabled := config.GetOllamaGenerationCacheEnabled()
+	cacheSimilarityThreshold := config.GetOllamaGenerationCacheSimilarityThreshold()
+	return NewFeedAdapter(r, p, d, ollama, tmpl, cacheSimilarityThreshold, cacheEnabled), nil
 }
 
 func (a *FeedAdapter) Parse(ctx context.Context, feedURL string) (*model.Feed, error) {
@@ -139,7 +146,21 @@ type promptTemplateData struct {
 }
 
 func (a *FeedAdapter) AskAQuestion(ctx context.Context, question string) (string, error) {
-	docs, err := a.Search(ctx, question, 10)
+	if a.cacheEnabled {
+		fmt.Println("checking cache for question:", question)
+		cacheID, err := a.docs.FindCacheID(ctx, question, a.cacheSimilarityThreshold)
+		if err == nil && cacheID != "" {
+			cache, err := a.r.FindGeneratedCache(ctx, cacheID)
+			if err != nil {
+				return "", fmt.Errorf("finding generated cache: %w", err)
+			}
+
+			fmt.Println("found cache for question:", question)
+
+			return cache.Answer, nil
+		}
+	}
+	docs, err := a.Search(ctx, question, 2)
 	if err != nil {
 		return "", fmt.Errorf("searching documents: %w", err)
 	}
@@ -150,9 +171,30 @@ func (a *FeedAdapter) AskAQuestion(ctx context.Context, question string) (string
 		return "", fmt.Errorf("executing template: %w", err)
 	}
 
-	return a.ollama.GenerationFunc(
+	response, err := a.ollama.GenerateFunc(
 		ctx,
 		b.String(),
-		false,
+		ollama.WithNumPredict(1024),
 	)
+	if err != nil {
+		return "", fmt.Errorf("generating response: %w", err)
+	}
+
+	if a.cacheEnabled {
+		fmt.Println("saving answer cache for question:", question)
+		cache := model.AnswerCache{
+			Question: question,
+			Answer:   response.Response,
+		}
+		cacheID, err := a.docs.SaveGenerationCache(ctx, &cache)
+		if err != nil {
+			return "", fmt.Errorf("saving answer cache: %w", err)
+		}
+		cache.ID = cacheID
+		if err := a.r.SaveGeneratedCache(ctx, &cache); err != nil {
+			return "", fmt.Errorf("saving answer cache: %w", err)
+		}
+	}
+
+	return response.Response, err
 }

@@ -36,7 +36,7 @@ ask:
 	go run \
         		./cmd/cli \
         			ask \
-        				O que é um MCP no contexto de LLMs? Me dê exemplos de uso.
+        				Como funciona o garbage collector do Go
 
 release:
 	goreleaser \
@@ -46,3 +46,9 @@ release:
 
 testing:
 	go run ./cmd/cli testing
+
+models-ls:
+	go run ./cmd/cli/ models ls
+
+models-ps:
+	go run ./cmd/cli/ models ps

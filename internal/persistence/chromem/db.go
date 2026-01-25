@@ -2,8 +2,10 @@ package chromem
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
-	"github.com/eldius/document-feed-embedder/internal/client"
+	"github.com/eldius/document-feed-embedder/internal/client/ollama"
 	"github.com/eldius/document-feed-embedder/internal/config"
 	"github.com/eldius/document-feed-embedder/internal/model"
 	"github.com/eldius/initial-config-go/logs"
@@ -15,12 +17,16 @@ import (
 	"strings"
 )
 
-const articleCollectionName = "articles"
+const (
+	articleCollectionName = "articles"
+	answerCollectionName  = "answers"
+)
 
 type DocumentVectorizer struct {
-	db           *chromem.DB
-	coll         *chromem.Collection
-	ollamaClient *client.OllamaClient
+	db                *chromem.DB
+	docsCollection    *chromem.Collection
+	answersCollection *chromem.Collection
+	ollamaClient      *ollama.OllamaClient
 
 	embeddingModel string
 	chunkSize      int
@@ -35,19 +41,25 @@ type ollamaResponse struct {
 	PromptEvalCount int         `json:"prompt_eval_count"`
 }
 
-func NewDocumentVectorizer(db *chromem.DB, oc *client.OllamaClient, embeddingFunc chromem.EmbeddingFunc, embeddingModel string, chunkSize, chunkOverlap int) (*DocumentVectorizer, error) {
-	coll, err := db.GetOrCreateCollection(articleCollectionName, map[string]string{}, embeddingFunc)
+func NewDocumentVectorizer(db *chromem.DB, oc *ollama.OllamaClient, embeddingFunc chromem.EmbeddingFunc, embeddingModel string, chunkSize, chunkOverlap int) (*DocumentVectorizer, error) {
+	docsCollection, err := db.GetOrCreateCollection(articleCollectionName, map[string]string{}, embeddingFunc)
+	if err != nil {
+		return nil, err
+	}
+
+	answersCollection, err := db.GetOrCreateCollection(answerCollectionName, map[string]string{}, embeddingFunc)
 	if err != nil {
 		return nil, err
 	}
 
 	de := &DocumentVectorizer{
-		db:             db,
-		ollamaClient:   oc,
-		embeddingModel: embeddingModel,
-		chunkSize:      chunkSize,
-		chunkOverlap:   chunkOverlap,
-		coll:           coll,
+		db:                db,
+		ollamaClient:      oc,
+		embeddingModel:    embeddingModel,
+		chunkSize:         chunkSize,
+		chunkOverlap:      chunkOverlap,
+		docsCollection:    docsCollection,
+		answersCollection: answersCollection,
 	}
 
 	return de, nil
@@ -59,7 +71,7 @@ func NewDefaultDocumentVectorizer() (*DocumentVectorizer, error) {
 		return nil, fmt.Errorf("opening db: %w", err)
 	}
 
-	o := client.NewOllamaClient()
+	o := ollama.NewOllamaClient()
 	return NewDocumentVectorizer(db, o, o.EmbeddingFunc, config.GetOllamaEmbeddingModel(), config.GetOllamaEmbeddingBatchSize(), config.GetOllamaEmbeddingChunkOverlap())
 }
 
@@ -70,7 +82,7 @@ func (d *DocumentVectorizer) Search(ctx context.Context, term string, maxResults
 		return nil, fmt.Errorf("embedding term: %w", err)
 	}
 	//queryText := "What are the animals doing?"
-	queryResults, err := d.coll.QueryEmbedding(ctx, embTerm, maxResults, nil, nil)
+	queryResults, err := d.docsCollection.QueryEmbedding(ctx, embTerm, maxResults, nil, nil)
 
 	return queryResults, nil
 }
@@ -82,7 +94,7 @@ func (d *DocumentVectorizer) SearchDocs(ctx context.Context, term string, maxRes
 		return nil, fmt.Errorf("embedding term: %w", err)
 	}
 	//queryText := "What are the animals doing?"
-	queryResults, err := d.coll.QueryEmbedding(ctx, embTerm, maxResults, nil, nil)
+	queryResults, err := d.docsCollection.QueryEmbedding(ctx, embTerm, maxResults, nil, nil)
 
 	return queryResults, nil
 }
@@ -149,13 +161,55 @@ func (d *DocumentVectorizer) Save(ctx context.Context, feed *model.Feed) error {
 		return nil
 	}
 
-	if err := d.coll.AddDocuments(ctx, docs, 1); err != nil {
+	if err := d.docsCollection.AddDocuments(ctx, docs, 1); err != nil {
 		logs.NewLogger(ctx, logs.KeyValueData{
 			"error": err,
 		}).Warnf("error adding document")
 		return err
 	}
 	return nil
+}
+
+func (d *DocumentVectorizer) SaveGenerationCache(ctx context.Context, cache *model.AnswerCache) (string, error) {
+	embCache, err := d.ollamaClient.EmbeddingFunc(ctx, cache.Question)
+	if err != nil {
+		return "", fmt.Errorf("embedding question: %w", err)
+	}
+	doc, err := chromem.NewDocument(
+		ctx,
+		cacheID(cache),
+		nil,
+		embCache,
+		cache.Question,
+		d.ollamaClient.EmbeddingFunc,
+	)
+	if err != nil {
+		return "", fmt.Errorf("creating document: %w", err)
+	}
+	if err := d.answersCollection.AddDocuments(ctx, []chromem.Document{doc}, 1); err != nil {
+		return "", fmt.Errorf("adding document: %w", err)
+	}
+	return doc.ID, nil
+}
+
+func (d *DocumentVectorizer) FindCacheID(ctx context.Context, question string, similarityThreshold float32) (string, error) {
+	embQuestion, err := d.ollamaClient.EmbeddingFunc(ctx, question)
+	if err != nil {
+		return "", fmt.Errorf("embedding question: %w", err)
+	}
+	queryResults, err := d.answersCollection.QueryEmbedding(ctx, embQuestion, 1, nil, nil)
+	if err != nil {
+		return "", fmt.Errorf("querying documents: %w", err)
+	}
+	if len(queryResults) == 0 {
+		return "", nil
+	}
+
+	if queryResults[0].Similarity < similarityThreshold {
+		return "", nil
+	}
+
+	return queryResults[0].ID, nil
 }
 
 func (d *DocumentVectorizer) htmlParse(ctx context.Context, article model.Article) ([]schema.Document, error) {
@@ -171,4 +225,18 @@ func (d *DocumentVectorizer) htmlParse(ctx context.Context, article model.Articl
 			textsplitter.WithChunkOverlap(d.chunkOverlap),
 		),
 	)
+}
+
+func cacheID(cache *model.AnswerCache) string {
+	h := sha256.New()
+
+	// Write the string as a byte slice to the hash
+	h.Write([]byte(cache.Question))
+	h.Write([]byte(cache.Answer))
+
+	// Get the final hash sum as a byte slice
+	sum := h.Sum(nil)
+
+	// Convert the byte slice to a hexadecimal string for display
+	return hex.EncodeToString(sum)
 }
