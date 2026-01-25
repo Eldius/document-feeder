@@ -4,6 +4,7 @@ Copyright © 2026 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"charm.land/lipgloss/v2"
 	"fmt"
 	"github.com/eldius/document-feed-embedder/internal/adapter"
 	"strings"
@@ -27,26 +28,37 @@ to quickly create a Cobra application.`,
 			panic(err)
 		}
 		fmt.Println("searching feeds")
-		feeds, err := a.Search(cmd.Context(), strings.Join(args, " "))
+		articles, err := a.Search(cmd.Context(), strings.Join(args, " "), feedSearchOpts.maxResults)
 		if err != nil {
 			panic(err)
 		}
-		for _, f := range feeds {
-			fmt.Println(f.Title)
+		titleStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("39")).
+			Bold(true)
+		feedStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("255")).
+			Bold(false)
+		tagStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("123")).
+			Bold(true)
+		fmt.Println()
+		fmt.Println()
+		fmt.Println("------")
+		fmt.Println(titleStyle.Render("Found articles in feeds for '" + strings.Join(args, " ") + "':"))
+		for _, a := range articles {
+			fmt.Println(feedStyle.Render(" ->", a.Article.Title), tagStyle.Render(" => (", fmt.Sprintf("%0.2f", a.Similarity), strings.Join(a.Article.Categories, ", "), ")"))
 		}
 	},
 }
 
+var (
+	feedSearchOpts struct {
+		maxResults int
+	}
+)
+
 func init() {
 	feedCmd.AddCommand(feedSearchCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// searchCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// searchCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	feedSearchCmd.Flags().IntVarP(&feedSearchOpts.maxResults, "max-results", "m", 10, "max results to return")
 }

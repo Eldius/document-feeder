@@ -7,7 +7,7 @@ ollama:
   embedding:
 #    model: mxbai-embed-large
     model: nomic-embed-text
-    chunk_size: 4096
-    chunk_overlap: 400
-
-#    encoding_name: cl100k_base
+    chunk_size: 2048
+    chunk_overlap: 200
+  generation:
+    model: llama3:8b-instruct-q4_K_M

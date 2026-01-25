@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/eldius/document-feed-embedder/internal/config"
 	"github.com/eldius/initial-config-go/configs"
 	"os"
 
@@ -20,6 +21,13 @@ var rootCmd = &cobra.Command{
 		setup.WithEnvPrefix("FEEDER"),
 		setup.WithDefaultCfgFileName("config"),
 		setup.WithDefaultValues(configs.DefaultConfigValuesLogFileMap),
+		setup.WithProps(
+			config.OllamaEndPointProp,
+			config.OllamaEmbeddingModelProp,
+			config.OllamaEmbeddingBatchSizeProp,
+			config.OllamaEmbeddingChunkOverlapProp,
+			config.OllamaGenerationModelProp,
+		),
 	),
 }
 

@@ -2,6 +2,16 @@ package model
 
 import "time"
 
+type SearchResult struct {
+	FeedTitle string `json:"feedTitle"`
+
+	Article Article
+
+	Similarity       float32
+	SanitizedContent string
+	Embeddings       []float32
+}
+
 type Feed struct {
 	Title       string     `json:"title" storm:"unique"`
 	Description string     `json:"description"`
@@ -50,10 +60,10 @@ type LinkAttr struct {
 }
 
 type Article struct {
-	Title           string           `json:"title"`
+	Title           string           `json:"title" storm:"index"`
 	Description     string           `json:"description"`
 	Content         string           `json:"content"`
-	Link            string           `json:"link"`
+	Link            string           `json:"link" storm:"index"`
 	Links           []string         `json:"links"`
 	Published       string           `json:"published"`
 	PublishedParsed *time.Time       `json:"publishedParsed"`
@@ -67,11 +77,11 @@ type Article struct {
 }
 
 type Author struct {
-	Name string `json:"name"`
+	Name string `json:"name" storm:"index"`
 }
 
 type DcExt struct {
-	Creator []string `json:"creator"`
+	Creator []string `json:"creator" storm:"index"`
 }
 
 type ArticleExtension struct {
@@ -79,11 +89,11 @@ type ArticleExtension struct {
 }
 
 type ArticleDc struct {
-	Creator []ArticleCreator `json:"creator"`
+	Creator []ArticleCreator `json:"creator" storm:"index"`
 }
 
 type ArticleCreator struct {
-	Name     string         `json:"name"`
+	Name     string         `json:"name" storm:"index"`
 	Value    string         `json:"value"`
 	Attrs    map[string]any `json:"attrs"`
 	Children map[string]any `json:"children"`
@@ -94,14 +104,14 @@ type ArticleImage struct {
 }
 
 func (f *Feed) AddItems(a ...Article) {
-	hash := map[string]struct{}{}
-	for _, item := range f.Items {
-		hash[item.Link] = struct{}{}
+	hash := make(map[string]int)
+	for i, item := range f.Items {
+		hash[item.Link] = i
 	}
 	for _, item := range a {
 		if _, ok := hash[item.Link]; ok {
-			continue
+			f.Items[hash[item.Link]] = item
 		}
-		f.Links = append(f.Links, item.Link)
+		f.Items = append(f.Items, item)
 	}
 }

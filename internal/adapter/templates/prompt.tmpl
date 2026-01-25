@@ -1,0 +1,9 @@
+Você é um assistente especializado. Use o contexto abaixo para responder.
+
+Contexto:
+{{ range .Results }}{{ .Article.Title }}
+    {{ .SanitizedContent }}
+{{ end }}
+
+Pergunta:
+{{ .Question }}

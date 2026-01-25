@@ -51,7 +51,7 @@ func (p *feedParser) Parse(ctx context.Context, feedURL string) (*model.Feed, er
 		Title:       feed.Title,
 		Description: feed.Description,
 		Link:        feed.Link,
-		FeedLink:    feed.FeedLink,
+		FeedLink:    feedURL,
 		Links:       feed.Links,
 		Language:    feed.Language,
 		Image:       fromImage(feed.Image),

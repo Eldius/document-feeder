@@ -2,7 +2,9 @@ package storm
 
 import (
 	"context"
+	"fmt"
 	"github.com/asdine/storm/v3"
+	"github.com/asdine/storm/v3/q"
 	"github.com/eldius/document-feed-embedder/internal/model"
 	"os"
 )
@@ -29,4 +31,18 @@ func (r *Repository) All(_ context.Context) ([]*model.Feed, error) {
 	var feeds []*model.Feed
 	err := r.db.All(&feeds)
 	return feeds, err
+}
+
+func (r *Repository) ArticleByLink(_ context.Context, feedTitle, articleLink string) (*model.Article, error) {
+	var feed model.Feed
+	if err := r.db.Select(q.Eq("Title", feedTitle)).First(&feed); err != nil {
+		return nil, fmt.Errorf("finding article by link: %w", err)
+	}
+
+	for _, a := range feed.Items {
+		if a.Link == articleLink {
+			return &a, nil
+		}
+	}
+	return nil, nil
 }
