@@ -1,9 +1,8 @@
 Você é um assistente especializado. Use o contexto abaixo para responder.
 
-Contexto:
+{{if .MySlice}}Contexto:
 {{ range .Results }}{{ .Article.Title }}
     {{ .SanitizedContent }}
-{{ end }}
-
+{{ end }}{{ end }}
 Pergunta:
 {{ .Question }}

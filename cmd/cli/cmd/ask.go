@@ -4,6 +4,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"fmt"
 	"github.com/eldius/document-feed-embedder/internal/adapter"
+	"github.com/eldius/document-feed-embedder/internal/ui"
 	"github.com/spf13/cobra"
 	"nmyk.io/cowsay"
 	"strings"
@@ -16,6 +17,8 @@ var askCmd = &cobra.Command{
 	Short: "Ask a question to the model using the stored content",
 	Long:  `Ask a question to the model using the stored content.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		cancel := ui.ProcessingScreen(cmd.Context(), "Processing question...")
+		defer cancel()
 		start := time.Now()
 		a, err := adapter.NewDefaultAdapter()
 		if err != nil {
@@ -25,6 +28,11 @@ var askCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
+
+		cancel()
+
+		time.Sleep(1 * time.Second)
+
 		questionStyle := lipgloss.NewStyle().
 			Foreground(lipgloss.Color("39")).
 			Bold(true)
@@ -36,6 +44,7 @@ var askCmd = &cobra.Command{
 			Foreground(lipgloss.Color("123")).
 			Italic(true).
 			Bold(true)
+
 		fmt.Println()
 		fmt.Println()
 		fmt.Println("---")

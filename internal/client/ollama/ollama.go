@@ -8,11 +8,42 @@ import (
 	"net/http"
 )
 
+func (c *OllamaClient) EmbeddingFuncSingleShot(ctx context.Context, text string) ([]float32, error) {
+	res, err := c.EmbeddingCall(ctx, OllamaEmbeddingRequest{
+		Model:     c.embeddingModel,
+		Input:     []string{text},
+		KeepAlive: 0,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("embedding call failed: %w", err)
+	}
+	return res.Embeddings[0], err
+}
+
+func (c *OllamaClient) EmbeddingFuncKeepAlive(ctx context.Context, text string) ([]float32, error) {
+	res, err := c.EmbeddingCall(ctx, OllamaEmbeddingRequest{
+		Model:     c.embeddingModel,
+		Input:     []string{text},
+		KeepAlive: 0,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("embedding call failed: %w", err)
+	}
+	return res.Embeddings[0], err
+}
+
 func (c *OllamaClient) EmbeddingFunc(ctx context.Context, text string) ([]float32, error) {
-	reqPayload := ollamaEmbeddingRequest{
+	res, err := c.EmbeddingCall(ctx, OllamaEmbeddingRequest{
 		Model: c.embeddingModel,
 		Input: []string{text},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("embedding call failed: %w", err)
 	}
+	return res.Embeddings[0], err
+}
+
+func (c *OllamaClient) EmbeddingCall(ctx context.Context, reqPayload OllamaEmbeddingRequest) (*OllamaEmbeddingResponse, error) {
 	b, err := json.Marshal(reqPayload)
 	if err != nil {
 		return nil, fmt.Errorf("marshalling request payload: %w", err)
@@ -23,15 +54,15 @@ func (c *OllamaClient) EmbeddingFunc(ctx context.Context, text string) ([]float3
 	}
 	res, err := c.c.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("executing request: %w", err)
 	}
 	defer func() { _ = res.Body.Close() }()
-	var embeddings ollamaEmbeddingResponse
+	var embeddings OllamaEmbeddingResponse
 	if err := json.NewDecoder(res.Body).Decode(&embeddings); err != nil {
 		return nil, fmt.Errorf("decoding response: %w", err)
 	}
 
-	return embeddings.Embeddings[0], nil
+	return &embeddings, nil
 }
 
 func WithNumKeep(numKeep int) GenerationOption {

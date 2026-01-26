@@ -7,36 +7,35 @@ add:
 				--feed "https://dev.to/feed/eldius" \
 				--feed "https://dev.to/feed/tag/go" \
 				--feed "https://dev.to/feed/pachicodes" \
-				--feed "https://www.asemanago.dev/feed" \
-				--max-results 20
+				--feed "https://www.asemanago.dev/feed"
 
 
 list:
 	go run \
-    		./cmd/cli \
-    			feed \
-    				list
+		./cmd/cli \
+			feed \
+				list
 
 
 refresh:
 	go run \
-    		./cmd/cli \
-    			feed \
-					refresh
+		./cmd/cli \
+			feed \
+				refresh
 
 
 search:
 	go run \
-    		./cmd/cli \
-    			feed \
-					search "how to debug golang from command line"
+		./cmd/cli \
+			feed \
+				search "how to debug golang from command line"
 
 
 ask:
 	go run \
-        		./cmd/cli \
-        			ask \
-        				Como funciona o garbage collector do Go
+		./cmd/cli \
+			ask \
+				"Explain the difference between supervised and unsupervised learning"
 
 release:
 	goreleaser \

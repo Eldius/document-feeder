@@ -53,14 +53,13 @@ func NewDefaultAdapter() (*FeedAdapter, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parsing templates: %w", err)
 	}
-	ollama := ollama.NewOllamaClient()
+	o := ollama.NewOllamaClient()
 	cacheEnabled := config.GetOllamaGenerationCacheEnabled()
 	cacheSimilarityThreshold := config.GetOllamaGenerationCacheSimilarityThreshold()
-	return NewFeedAdapter(r, p, d, ollama, tmpl, cacheSimilarityThreshold, cacheEnabled), nil
+	return NewFeedAdapter(r, p, d, o, tmpl, cacheSimilarityThreshold, cacheEnabled), nil
 }
 
 func (a *FeedAdapter) Parse(ctx context.Context, feedURL string) (*model.Feed, error) {
-	fmt.Println("parsing feed:", feedURL)
 	f, err := a.p.Parse(ctx, feedURL)
 	if err != nil {
 		return nil, fmt.Errorf("parsing feed: %w", err)
@@ -147,15 +146,12 @@ type promptTemplateData struct {
 
 func (a *FeedAdapter) AskAQuestion(ctx context.Context, question string) (string, error) {
 	if a.cacheEnabled {
-		fmt.Println("checking cache for question:", question)
 		cacheID, err := a.docs.FindCacheID(ctx, question, a.cacheSimilarityThreshold)
 		if err == nil && cacheID != "" {
 			cache, err := a.r.FindGeneratedCache(ctx, cacheID)
 			if err != nil {
 				return "", fmt.Errorf("finding generated cache: %w", err)
 			}
-
-			fmt.Println("found cache for question:", question)
 
 			return cache.Answer, nil
 		}
@@ -164,6 +160,7 @@ func (a *FeedAdapter) AskAQuestion(ctx context.Context, question string) (string
 	if err != nil {
 		return "", fmt.Errorf("searching documents: %w", err)
 	}
+
 	data := promptTemplateData{Question: question, Results: docs}
 
 	var b strings.Builder
@@ -181,7 +178,6 @@ func (a *FeedAdapter) AskAQuestion(ctx context.Context, question string) (string
 	}
 
 	if a.cacheEnabled {
-		fmt.Println("saving answer cache for question:", question)
 		cache := model.AnswerCache{
 			Question: question,
 			Answer:   response.Response,

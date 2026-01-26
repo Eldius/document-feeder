@@ -21,17 +21,18 @@ func NewOllamaClient() *OllamaClient {
 		c:                  httpclient.NewHTTPClient(),
 		endpoint:           config.GetOllamaEndpoint(),
 		embeddingModel:     config.GetOllamaEmbeddingModel(),
-		embeddingBatchSize: config.GetOllamaEmbeddingBatchSize(),
+		embeddingBatchSize: config.GetOllamaEmbeddingChunkSize(),
 		generationModel:    config.GetOllamaGenerationModel(),
 	}
 }
 
-type ollamaEmbeddingRequest struct {
-	Model string   `json:"model"`
-	Input []string `json:"input"`
+type OllamaEmbeddingRequest struct {
+	Model     string   `json:"model"`
+	Input     []string `json:"input"`
+	KeepAlive int      `json:"keep_alive"`
 }
 
-type ollamaEmbeddingResponse struct {
+type OllamaEmbeddingResponse struct {
 	Model           string      `json:"model"`
 	Embeddings      [][]float32 `json:"embeddings"`
 	TotalDuration   int         `json:"total_duration"`

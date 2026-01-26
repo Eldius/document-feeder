@@ -14,7 +14,7 @@ var (
 		Key:   "ollama.embedding.model",
 		Value: "nomic-embed-text",
 	}
-	OllamaEmbeddingBatchSizeProp = setup.Prop{
+	OllamaEmbeddingChunkSizeProp = setup.Prop{
 		Key:   "ollama.embedding.chunk_size",
 		Value: 2048,
 	}
@@ -44,8 +44,8 @@ func GetOllamaEmbeddingModel() string {
 	return viper.GetString(OllamaEmbeddingModelProp.Key)
 }
 
-func GetOllamaEmbeddingBatchSize() int {
-	return viper.GetInt(OllamaEmbeddingBatchSizeProp.Key)
+func GetOllamaEmbeddingChunkSize() int {
+	return viper.GetInt(OllamaEmbeddingChunkSizeProp.Key)
 }
 
 func GetOllamaEmbeddingChunkOverlap() int {
