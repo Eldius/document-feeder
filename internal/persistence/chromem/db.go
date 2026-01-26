@@ -4,7 +4,13 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
+	"maps"
+	"runtime"
+	"strings"
+
+	"github.com/asdine/storm/v3"
 	"github.com/eldius/document-feeder/internal/client/ollama"
 	"github.com/eldius/document-feeder/internal/config"
 	"github.com/eldius/document-feeder/internal/model"
@@ -13,9 +19,6 @@ import (
 	"github.com/tmc/langchaingo/documentloaders"
 	"github.com/tmc/langchaingo/schema"
 	"github.com/tmc/langchaingo/textsplitter"
-	"maps"
-	"runtime"
-	"strings"
 )
 
 const (
@@ -88,7 +91,23 @@ func NewDefaultDocumentVectorizer() (*DocumentVectorizer, error) {
 }
 
 func (d *DocumentVectorizer) Search(ctx context.Context, term string, maxResults int) ([]chromem.Result, error) {
-	return d.docsCollection.Query(ctx, term, maxResults, nil, nil)
+	log := logs.NewLogger(ctx, logs.KeyValueData{
+		"term":        term,
+		"max_results": maxResults,
+	})
+	log.Debug("searching documents")
+	results, err := d.docsCollection.Query(ctx, term, maxResults, nil, nil)
+	if err != nil {
+		if errors.Is(err, storm.ErrNotFound) {
+			log.WithError(err).Warn("no results found")
+			return nil, nil
+		}
+		return nil, err
+	}
+	log.WithExtraData("results", results).
+		WithExtraData("results_count", len(results)).
+		Debug("doc results")
+	return results, err
 }
 
 func (d *DocumentVectorizer) SearchDocs(ctx context.Context, term string, maxResults int) ([]chromem.Result, error) {
@@ -99,6 +118,10 @@ func (d *DocumentVectorizer) Save(ctx context.Context, feed *model.Feed) error {
 	if feed == nil {
 		return nil
 	}
+	log := logs.NewLogger(ctx, logs.KeyValueData{
+		"feed_title": feed.Title,
+	})
+	log.Debug("saving feed")
 	var docs []chromem.Document
 	for _, article := range feed.Items {
 
@@ -139,9 +162,7 @@ func (d *DocumentVectorizer) Save(ctx context.Context, feed *model.Feed) error {
 
 	if err := d.docsCollection.AddDocuments(ctx, docs, runtime.NumCPU()); err != nil {
 		err := fmt.Errorf("adding documents: %w", err)
-		logs.NewLogger(ctx, logs.KeyValueData{
-			"error": err,
-		}).Warnf("error adding document")
+		log.WithExtraData("error", err).Warn("error adding document")
 		return err
 	}
 	return nil

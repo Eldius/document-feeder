@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/eldius/document-feeder/internal/adapter"
 	"github.com/spf13/cobra"
 )
 
-// feedListCmd represents the list command
+// feedListCmd represents the list command.
 var feedListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "A brief description of your command",
@@ -25,7 +27,14 @@ to quickly create a Cobra application.`,
 			panic(err)
 		}
 		for _, f := range feeds {
-			println(f.Title)
+			fmt.Println("+---------------------------")
+			fmt.Println(f.Title)
+			fmt.Println("  articles:")
+			for _, a := range f.Items {
+				fmt.Println("    - title:", a.Title)
+				fmt.Println("      link:", a.Link)
+			}
+			fmt.Println("+---------------------------")
 		}
 	},
 }

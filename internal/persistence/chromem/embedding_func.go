@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/eldius/document-feeder/internal/client/ollama"
-	"github.com/philippgille/chromem-go"
 	"math"
 	"sync"
+
+	"github.com/eldius/document-feeder/internal/client/ollama"
+	"github.com/eldius/initial-config-go/logs"
+	"github.com/philippgille/chromem-go"
 )
 
 const (
@@ -26,16 +28,22 @@ func NewEmbeddingFuncOllama(model string, oc *ollama.OllamaClient) chromem.Embed
 	checkNormalized := sync.Once{}
 
 	return func(ctx context.Context, text string) ([]float32, error) {
+		log := logs.NewLogger(ctx, logs.KeyValueData{
+			"model": model,
+			"text":  text,
+		})
 		// Prepare the request body.
 		reqBody := ollama.OllamaEmbeddingRequest{
 			Model: model,
 			Input: []string{text},
 		}
 
+		log.Debug("Calling embedding API")
 		embeddingResponse, err := oc.EmbeddingCall(ctx, reqBody)
 		if err != nil {
 			return nil, fmt.Errorf("embedding call: %w", err)
 		}
+		log.WithExtraData("embeddings", embeddingResponse).Debug("Embedding API call successful")
 
 		// Check if the response contains embeddings.
 		if len(embeddingResponse.Embeddings) == 0 {

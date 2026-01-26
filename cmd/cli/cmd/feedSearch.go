@@ -4,15 +4,18 @@ Copyright © 2026 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"charm.land/lipgloss/v2"
 	"fmt"
+
 	"github.com/eldius/document-feeder/internal/adapter"
+	"github.com/eldius/document-feeder/internal/model"
+	"github.com/eldius/document-feeder/internal/ui"
+
 	"strings"
 
 	"github.com/spf13/cobra"
 )
 
-// searchCmd represents the search command
+// feedSearchCmd represents the search command.
 var feedSearchCmd = &cobra.Command{
 	Use:   "search",
 	Short: "A brief description of your command",
@@ -28,25 +31,18 @@ to quickly create a Cobra application.`,
 			panic(err)
 		}
 		fmt.Println("searching feeds")
-		articles, err := a.Search(cmd.Context(), strings.Join(args, " "), feedSearchOpts.maxResults)
+		res, err := a.Search(cmd.Context(), strings.Join(args, " "), feedSearchOpts.maxResults)
 		if err != nil {
 			panic(err)
 		}
-		titleStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("39")).
-			Bold(true)
-		feedStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("255")).
-			Bold(false)
-		tagStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("123")).
-			Bold(true)
-		fmt.Println()
-		fmt.Println()
-		fmt.Println("------")
-		fmt.Println(titleStyle.Render("Found articles in feeds for '" + strings.Join(args, " ") + "':"))
-		for _, a := range articles {
-			fmt.Println(feedStyle.Render(" ->", a.Article.Title), tagStyle.Render(" => (", fmt.Sprintf("%0.2f", a.Similarity), strings.Join(a.Article.Categories, ", "), ")"))
+
+		var articles []model.Article
+		for _, a := range res {
+			articles = append(articles, a.Article)
+		}
+
+		if err := ui.ArticleReaderScreen(cmd.Context(), articles); err != nil {
+			panic(err)
 		}
 	},
 }

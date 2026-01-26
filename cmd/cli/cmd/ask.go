@@ -1,17 +1,18 @@
 package cmd
 
 import (
-	"charm.land/lipgloss/v2"
 	"fmt"
+	"strings"
+	"time"
+
+	"charm.land/lipgloss/v2"
 	"github.com/eldius/document-feeder/internal/adapter"
 	"github.com/eldius/document-feeder/internal/ui"
 	"github.com/spf13/cobra"
 	"nmyk.io/cowsay"
-	"strings"
-	"time"
 )
 
-// askCmd represents the ask command
+// askCmd represents the ask command.
 var askCmd = &cobra.Command{
 	Use:   "ask",
 	Short: "Ask a question to the model using the stored content",
@@ -45,8 +46,8 @@ var askCmd = &cobra.Command{
 			Italic(true).
 			Bold(true)
 
-		fmt.Println()
-		fmt.Println()
+		fmt.Println("")
+		fmt.Println("")
 		fmt.Println("---")
 		fmt.Println(questionStyle.Render("Question: " + strings.Join(args, " ")))
 
@@ -56,9 +57,9 @@ var askCmd = &cobra.Command{
 			fmt.Println(answerStyle.Render("Answer: " + answer))
 		}
 
-		fmt.Println()
-		fmt.Println()
-		fmt.Println()
+		fmt.Println("")
+		fmt.Println("")
+		fmt.Println("")
 		fmt.Println("---")
 		fmt.Println("---")
 		fmt.Println(footerStyle.Render(fmt.Sprintf("Time elapsed: %s", time.Since(start).String())))

@@ -4,15 +4,16 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"slices"
+	"strings"
+	"text/template"
+
 	"github.com/eldius/document-feeder/internal/client/ollama"
 	"github.com/eldius/document-feeder/internal/config"
 	"github.com/eldius/document-feeder/internal/feed"
 	"github.com/eldius/document-feeder/internal/model"
 	"github.com/eldius/document-feeder/internal/persistence/chromem"
 	"github.com/eldius/document-feeder/internal/persistence/storm"
-	"slices"
-	"strings"
-	"text/template"
 )
 
 var (
@@ -113,11 +114,17 @@ func (a *FeedAdapter) Search(ctx context.Context, term string, maxResults int) (
 
 	var res []*model.SearchResult
 	for _, d := range docs {
-		doc, err := a.r.ArticleByLink(ctx, d.Metadata["feed"], d.ID)
+		doc, err := a.r.ArticleByLink(ctx, d.Metadata["feed"], d.Metadata["link"])
 		if err != nil {
 			return nil, fmt.Errorf("getting article by link: %w", err)
 		}
 		if doc == nil {
+			res = append(res, &model.SearchResult{
+				FeedTitle:        d.Metadata["feed"],
+				Similarity:       d.Similarity,
+				SanitizedContent: d.Content,
+				Embeddings:       d.Embedding,
+			})
 			continue
 		}
 		res = append(res, &model.SearchResult{

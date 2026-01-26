@@ -1,6 +1,6 @@
 Você é um assistente especializado. Use o contexto abaixo para responder.
 
-{{if .MySlice}}Contexto:
+{{ if .Results }}Contexto:
 {{ range .Results }}{{ .Article.Title }}
     {{ .SanitizedContent }}
 {{ end }}{{ end }}

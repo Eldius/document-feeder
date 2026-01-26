@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
-// testingCmd represents the testing command
+// testingCmd represents the testing command.
 var testingCmd = &cobra.Command{
 	Use:   "testing",
 	Short: "A brief description of your command",

@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// modelLsCmd represents the ls command
+// modelLsCmd represents the ls command.
 var modelLsCmd = &cobra.Command{
 	Use:     "ls",
 	Aliases: []string{"list"},

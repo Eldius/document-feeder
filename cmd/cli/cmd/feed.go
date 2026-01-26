@@ -4,7 +4,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// feedCmd represents the feed command
+// feedCmd represents the feed command.
 var feedCmd = &cobra.Command{
 	Use:   "feed",
 	Short: "A brief description of your command",

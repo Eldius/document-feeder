@@ -3,10 +3,12 @@ package storm
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/asdine/storm/v3"
 	"github.com/asdine/storm/v3/q"
 	"github.com/eldius/document-feeder/internal/model"
-	"os"
+	"github.com/eldius/initial-config-go/logs"
 )
 
 type Repository struct {
@@ -14,7 +16,7 @@ type Repository struct {
 }
 
 func NewRepository() *Repository {
-	_ = os.MkdirAll("data", 0755)
+	_ = os.MkdirAll("data", 0700)
 	db, _ := storm.Open("data/feeds.db")
 	return &Repository{db: db}
 }
@@ -34,12 +36,20 @@ func (r *Repository) All(_ context.Context) ([]*model.Feed, error) {
 }
 
 func (r *Repository) ArticleByLink(_ context.Context, feedTitle, articleLink string) (*model.Article, error) {
+	log := logs.NewLogger(context.Background(), logs.KeyValueData{
+		"feed_title":   feedTitle,
+		"article_link": articleLink,
+	})
+
+	log.Debug("finding article by link")
 	var feed model.Feed
 	if err := r.db.Select(q.Eq("Title", feedTitle)).First(&feed); err != nil {
 		return nil, fmt.Errorf("finding article by link: %w", err)
 	}
 
+	log = log.WithExtraData("feed_link", feed.FeedLink)
 	for _, a := range feed.Items {
+		log.WithExtraData("item_link", a.Link).Debug("checking article link")
 		if a.Link == articleLink {
 			return &a, nil
 		}

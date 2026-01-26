@@ -1,15 +1,16 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/eldius/document-feeder/internal/config"
 	"github.com/eldius/initial-config-go/configs"
-	"os"
 
 	"github.com/eldius/initial-config-go/setup"
 	"github.com/spf13/cobra"
 )
 
-// rootCmd represents the base command when called without any subcommands
+// rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
 	Use:   "document-feed-embedder",
 	Short: "A simple news feed tool",

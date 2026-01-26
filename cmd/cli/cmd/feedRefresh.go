@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/eldius/document-feeder/internal/adapter"
 
 	"github.com/spf13/cobra"
 )
 
-// refreshCmd represents the refresh command
+// feedRefreshCmd represents the refresh command.
 var feedRefreshCmd = &cobra.Command{
 	Use:   "refresh",
 	Short: "A brief description of your command",

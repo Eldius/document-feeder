@@ -1,9 +1,11 @@
 package ollama
 
 import (
+	"math/rand/v2"
+
 	"github.com/eldius/document-feeder/internal/config"
 	"github.com/eldius/initial-config-go/httpclient"
-	"math/rand/v2"
+
 	"net/http"
 	"time"
 )
@@ -79,9 +81,10 @@ type ollamaOptionsRequest struct {
 }
 
 func defaultOllamaGenerationOptions() ollamaOptionsRequest {
+	randomSeed := rand.IntN(100)
 	return ollamaOptionsRequest{
 		NumKeep:     10,
-		Seed:        rand.Int(),
+		Seed:        randomSeed,
 		NumPredict:  1,
 		TopK:        40,
 		TopP:        1.0,

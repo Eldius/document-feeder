@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// modelPsCmd represents the ps command
+// modelPsCmd represents the ps command.
 var modelPsCmd = &cobra.Command{
 	Use:   "ps",
 	Short: "List running models.",

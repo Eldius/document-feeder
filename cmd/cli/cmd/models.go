@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/eldius/document-feeder/internal/client/ollama"
 	"github.com/spf13/cobra"
 )
 
-// modelsCmd represents the models command
+// modelsCmd represents the models command.
 var modelsCmd = &cobra.Command{
 	Use:   "models",
 	Short: "List available models.",
@@ -18,7 +19,7 @@ var modelsCmd = &cobra.Command{
 			panic(err)
 		}
 		for _, m := range models.Models {
-			fmt.Println()
+			fmt.Println("")
 			fmt.Println("- name:    ", m.Name)
 			fmt.Println("  size:    ", m.Size)
 			fmt.Println("  modified:", m.ModifiedAt.Format("2006-01-02 15:04:05"))

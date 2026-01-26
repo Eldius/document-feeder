@@ -16,7 +16,7 @@ type tickMsg time.Time
 // doneMsg is sent when the context is cancelled.
 type doneMsg struct{}
 
-type model struct {
+type processingScreenModel struct {
 	ctx       context.Context
 	dots      int
 	width     int
@@ -41,11 +41,11 @@ func tick() tea.Cmd {
 	})
 }
 
-func (m model) Init() tea.Cmd {
+func (m processingScreenModel) Init() tea.Cmd {
 	return tea.Batch(tick(), waitForContext(m.ctx))
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m processingScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		if msg.String() == "ctrl+c" || msg.String() == "q" {
@@ -64,7 +64,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m model) View() string {
+func (m processingScreenModel) View() string {
 	if m.quitting {
 		return "Done!\n"
 	}
@@ -102,7 +102,7 @@ func (m model) View() string {
 }
 
 func displayProcessingScreen(ctx context.Context, msg string) error {
-	p := tea.NewProgram(model{
+	p := tea.NewProgram(processingScreenModel{
 		ctx:       ctx,
 		msg:       msg,
 		startTime: time.Now(),
@@ -123,7 +123,6 @@ func ProcessingScreen(ctx context.Context, msg string) context.CancelFunc {
 		}
 	}(ctx)
 	return func() {
-		tea.Quit()
 		cancel()
 	}
 }

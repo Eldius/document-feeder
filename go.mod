@@ -4,8 +4,10 @@ go 1.25.6
 
 require (
 	charm.land/lipgloss/v2 v2.0.0-beta.3.0.20251120230642-dcccabe2cd63
+	github.com/JohannesKaufmann/html-to-markdown/v2 v2.5.0
 	github.com/asdine/storm/v3 v3.2.1
 	github.com/charmbracelet/bubbletea v1.3.9
+	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/eldius/initial-config-go v0.0.30
 	github.com/mmcdole/gofeed v1.3.0
 	github.com/philippgille/chromem-go v0.7.0
@@ -17,15 +19,15 @@ require (
 
 require (
 	github.com/AssemblyAI/assemblyai-go-sdk v1.3.0 // indirect
+	github.com/JohannesKaufmann/dom v0.2.0 // indirect
 	github.com/PuerkitoBio/goquery v1.8.1 // indirect
-	github.com/andybalholm/cascadia v1.3.2 // indirect
+	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/charmbracelet/colorprofile v0.4.1 // indirect
-	github.com/charmbracelet/lipgloss v1.1.0 // indirect
 	github.com/charmbracelet/ultraviolet v0.0.0-20251120225753-26363bddd922 // indirect
 	github.com/charmbracelet/x/ansi v0.11.4 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.14 // indirect
