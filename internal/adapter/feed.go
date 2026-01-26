@@ -4,12 +4,12 @@ import (
 	"context"
 	"embed"
 	"fmt"
-	"github.com/eldius/document-feed-embedder/internal/client/ollama"
-	"github.com/eldius/document-feed-embedder/internal/config"
-	"github.com/eldius/document-feed-embedder/internal/feed"
-	"github.com/eldius/document-feed-embedder/internal/model"
-	"github.com/eldius/document-feed-embedder/internal/persistence/chromem"
-	"github.com/eldius/document-feed-embedder/internal/persistence/storm"
+	"github.com/eldius/document-feeder/internal/client/ollama"
+	"github.com/eldius/document-feeder/internal/config"
+	"github.com/eldius/document-feeder/internal/feed"
+	"github.com/eldius/document-feeder/internal/model"
+	"github.com/eldius/document-feeder/internal/persistence/chromem"
+	"github.com/eldius/document-feeder/internal/persistence/storm"
 	"slices"
 	"strings"
 	"text/template"
@@ -116,6 +116,9 @@ func (a *FeedAdapter) Search(ctx context.Context, term string, maxResults int) (
 		doc, err := a.r.ArticleByLink(ctx, d.Metadata["feed"], d.ID)
 		if err != nil {
 			return nil, fmt.Errorf("getting article by link: %w", err)
+		}
+		if doc == nil {
+			continue
 		}
 		res = append(res, &model.SearchResult{
 			FeedTitle: d.Metadata["feed"],

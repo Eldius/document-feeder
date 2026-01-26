@@ -3,9 +3,9 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/eldius/document-feed-embedder/internal/adapter"
-	"github.com/eldius/document-feed-embedder/internal/model"
-	"github.com/eldius/document-feed-embedder/internal/ui"
+	"github.com/eldius/document-feeder/internal/adapter"
+	"github.com/eldius/document-feeder/internal/model"
+	"github.com/eldius/document-feeder/internal/ui"
 	"github.com/spf13/cobra"
 )
 

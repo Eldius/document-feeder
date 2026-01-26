@@ -3,8 +3,8 @@ package cmd
 import (
 	"charm.land/lipgloss/v2"
 	"fmt"
-	"github.com/eldius/document-feed-embedder/internal/adapter"
-	"github.com/eldius/document-feed-embedder/internal/ui"
+	"github.com/eldius/document-feeder/internal/adapter"
+	"github.com/eldius/document-feeder/internal/ui"
 	"github.com/spf13/cobra"
 	"nmyk.io/cowsay"
 	"strings"

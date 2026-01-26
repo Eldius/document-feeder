@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/eldius/document-feed-embedder/internal/adapter"
+	"github.com/eldius/document-feeder/internal/adapter"
 
 	"github.com/spf13/cobra"
 )

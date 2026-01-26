@@ -4,7 +4,7 @@ Copyright © 2026 NAME HERE <EMAIL ADDRESS>
 package main
 
 import (
-	"github.com/eldius/document-feed-embedder/cmd/cli/cmd"
+	"github.com/eldius/document-feeder/cmd/cli/cmd"
 )
 
 func main() {

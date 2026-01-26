@@ -6,7 +6,7 @@ package cmd
 import (
 	"charm.land/lipgloss/v2"
 	"fmt"
-	"github.com/eldius/document-feed-embedder/internal/adapter"
+	"github.com/eldius/document-feeder/internal/adapter"
 	"strings"
 
 	"github.com/spf13/cobra"

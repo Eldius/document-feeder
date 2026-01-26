@@ -1,4 +1,4 @@
-module github.com/eldius/document-feed-embedder
+module github.com/eldius/document-feeder
 
 go 1.25.6
 

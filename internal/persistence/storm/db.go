@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/asdine/storm/v3"
 	"github.com/asdine/storm/v3/q"
-	"github.com/eldius/document-feed-embedder/internal/model"
+	"github.com/eldius/document-feeder/internal/model"
 	"os"
 )
 

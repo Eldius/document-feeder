@@ -7,7 +7,16 @@ add:
 				--feed "https://dev.to/feed/eldius" \
 				--feed "https://dev.to/feed/tag/go" \
 				--feed "https://dev.to/feed/pachicodes" \
-				--feed "https://www.asemanago.dev/feed"
+				--feed "https://www.asemanago.dev/feed" \
+				--feed "https://blog.jetbrains.com/go/feed/" \
+				--feed "https://blog.learngoprogramming.com/feed" \
+				--feed "https://appliedgo.net/index.xml" \
+				--feed "https://changelog.com/gotime/feed" \
+				--feed "https://jajaldoang.com/index.xml" \
+				--feed "https://gosamples.dev/index.xml" \
+				--feed "https://trinhhieu668.wordpress.com/feed/" \
+				--feed "https://dev.to/feed/with_code_example" \
+				--feed "https://golangbot.com/index.xml"
 
 
 list:

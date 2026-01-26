@@ -3,7 +3,7 @@ package ui
 import (
 	"charm.land/lipgloss/v2"
 	"fmt"
-	"github.com/eldius/document-feed-embedder/internal/client/ollama"
+	"github.com/eldius/document-feeder/internal/client/ollama"
 )
 
 func DisplayModels(ms *ollama.OllamaModelsResponse) {

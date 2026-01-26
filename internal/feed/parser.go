@@ -3,7 +3,7 @@ package feed
 import (
 	"context"
 	"fmt"
-	"github.com/eldius/document-feed-embedder/internal/model"
+	"github.com/eldius/document-feeder/internal/model"
 	"github.com/eldius/initial-config-go/httpclient"
 	"github.com/mmcdole/gofeed"
 	ext "github.com/mmcdole/gofeed/extensions"
@@ -34,7 +34,7 @@ func (p *feedParser) Parse(ctx context.Context, feedURL string) (*model.Feed, er
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
 	}
-	req.Header.Set("User-Agent", "rss-parser/1.0.0 (+https://github.com/eldius/document-feed-embedder)")
+	req.Header.Set("User-Agent", "rss-parser/1.0.0 (+https://github.com/eldius/document-feeder)")
 
 	res, err := p.c.Do(req)
 	if err != nil {

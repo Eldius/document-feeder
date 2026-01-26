@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/eldius/document-feed-embedder/internal/config"
+	"github.com/eldius/document-feeder/internal/config"
 	"github.com/eldius/initial-config-go/configs"
 	"os"
 

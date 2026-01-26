@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"github.com/eldius/document-feed-embedder/internal/client/ollama"
-	"github.com/eldius/document-feed-embedder/internal/ui"
+	"github.com/eldius/document-feeder/internal/client/ollama"
+	"github.com/eldius/document-feeder/internal/ui"
 
 	"github.com/spf13/cobra"
 )

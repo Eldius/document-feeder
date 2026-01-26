@@ -5,8 +5,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"github.com/eldius/document-feed-embedder/internal/config"
-	"github.com/eldius/document-feed-embedder/internal/model"
+	"github.com/eldius/document-feeder/internal/client/ollama"
+	"github.com/eldius/document-feeder/internal/config"
+	"github.com/eldius/document-feeder/internal/model"
 	"github.com/eldius/initial-config-go/logs"
 	"github.com/philippgille/chromem-go"
 	"github.com/tmc/langchaingo/documentloaders"
@@ -36,15 +37,16 @@ type DocumentVectorizer struct {
 func NewDocumentVectorizer(
 	db *chromem.DB,
 	textSplitter textsplitter.TextSplitter,
-	ollamaEndpoint, embeddingModel string,
+	ollamaClient *ollama.OllamaClient,
+	embeddingModel string,
 	chunkSize, chunkOverlap int,
 ) (*DocumentVectorizer, error) {
-	docsCollection, err := db.GetOrCreateCollection(articleCollectionName, map[string]string{}, chromem.NewEmbeddingFuncOllama(embeddingModel, ollamaEndpoint+"/api"))
+	docsCollection, err := db.GetOrCreateCollection(articleCollectionName, map[string]string{}, NewEmbeddingFuncOllama(embeddingModel, ollamaClient))
 	if err != nil {
 		return nil, err
 	}
 
-	answersCollection, err := db.GetOrCreateCollection(answerCollectionName, map[string]string{}, chromem.NewEmbeddingFuncOllama(embeddingModel, ollamaEndpoint+"/api"))
+	answersCollection, err := db.GetOrCreateCollection(answerCollectionName, map[string]string{}, NewEmbeddingFuncOllama(embeddingModel, ollamaClient))
 	if err != nil {
 		return nil, err
 	}
@@ -73,10 +75,12 @@ func NewDefaultDocumentVectorizer() (*DocumentVectorizer, error) {
 		textsplitter.WithModelName(config.GetOllamaEmbeddingModel()),
 		textsplitter.WithChunkOverlap(config.GetOllamaEmbeddingChunkOverlap()),
 	)
+
+	ollamaClient := ollama.NewOllamaClient()
 	return NewDocumentVectorizer(
 		db,
 		textsplitter.NewRecursiveCharacter(),
-		config.GetOllamaEndpoint(),
+		ollamaClient,
 		config.GetOllamaEmbeddingModel(),
 		config.GetOllamaEmbeddingChunkSize(),
 		config.GetOllamaEmbeddingChunkOverlap(),

@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/eldius/document-feed-embedder/internal/client/ollama"
+	"github.com/eldius/document-feeder/internal/client/ollama"
 	"github.com/spf13/cobra"
 )
 
