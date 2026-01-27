@@ -30,6 +30,10 @@ var (
 		Key:   "ollama.generation.cache_enabled",
 		Value: false,
 	}
+	OllamaGenerationNoCacheProp = setup.Prop{
+		Key:   "ollama.generation.no-cache",
+		Value: false,
+	}
 	OllamaGenerationCacheSimilarityThresholdProp = setup.Prop{
 		Key:   "ollama.generation.cache_similarity_threshold",
 		Value: 0.8,
@@ -57,7 +61,7 @@ func GetOllamaGenerationModel() string {
 }
 
 func GetOllamaGenerationCacheEnabled() bool {
-	return viper.GetBool(OllamaGenerationCacheEnabledProp.Key)
+	return viper.GetBool(OllamaGenerationCacheEnabledProp.Key) && !viper.GetBool(OllamaGenerationNoCacheProp.Key)
 }
 
 func GetOllamaGenerationCacheSimilarityThreshold() float32 {

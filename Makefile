@@ -37,7 +37,7 @@ search:
 	go run \
 		./cmd/cli \
 			feed \
-				search "golang debug from command line"
+				search "explain to me how to debug a golang code from command line"
 
 
 ask:

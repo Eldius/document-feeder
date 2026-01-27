@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/eldius/document-feeder/internal/adapter"
 	"github.com/eldius/document-feeder/internal/ui"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"nmyk.io/cowsay"
 )
 
@@ -18,14 +20,15 @@ var askCmd = &cobra.Command{
 	Short: "Ask a question to the model using the stored content",
 	Long:  `Ask a question to the model using the stored content.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		cancel := ui.ProcessingScreen(cmd.Context(), "Processing question...")
+		cancel := ui.ProcessingScreen(cmd.Context(), "Processing questionOut...")
 		defer cancel()
 		start := time.Now()
 		a, err := adapter.NewDefaultAdapter()
 		if err != nil {
 			panic(err)
 		}
-		answer, err := a.AskAQuestion(cmd.Context(), strings.Join(args, " "))
+		questionIn := strings.Join(args, " ")
+		answer, err := a.AskAQuestion(cmd.Context(), questionIn)
 		if err != nil {
 			panic(err)
 		}
@@ -49,12 +52,23 @@ var askCmd = &cobra.Command{
 		fmt.Println("")
 		fmt.Println("")
 		fmt.Println("---")
-		fmt.Println(questionStyle.Render("Question: " + strings.Join(args, " ")))
+		questionOut := "Question: " + questionIn
+		fmt.Println(questionStyle.Render(questionOut))
 
+		answerOut := "Answer: " + answer
 		if askOpts.cowSay {
-			cowsay.Cowsay(answerStyle.Render("Answer: " + answer))
+			cowsay.Cowsay(answerStyle.Render(answerOut))
 		} else {
-			fmt.Println(answerStyle.Render("Answer: " + answer))
+			fmt.Println(answerStyle.Render(answerOut))
+		}
+
+		if askOpts.outputFile != "" {
+			fmt.Println("Outputting to file:", askOpts.outputFile)
+			err := os.WriteFile(askOpts.outputFile, []byte(questionOut+"\n"+answerOut), 0644)
+			if err != nil {
+				fmt.Println("Error writing to file:", err)
+				return
+			}
 		}
 
 		fmt.Println("")
@@ -68,7 +82,9 @@ var askCmd = &cobra.Command{
 
 var (
 	askOpts struct {
-		cowSay bool
+		cowSay       bool
+		outputFile   string
+		disableCache bool
 	}
 )
 
@@ -85,4 +101,9 @@ func init() {
 	// is called directly, e.g.:
 	// askCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	askCmd.Flags().BoolVarP(&askOpts.cowSay, "cow-say", "c", false, "Use cowsay to render the answer")
+	askCmd.Flags().StringVarP(&askOpts.outputFile, "output-file", "o", "", "Output the answer to a file")
+	askCmd.Flags().BoolVarP(&askOpts.disableCache, "no-cache", "d", false, "Disable caching for this question")
+	if err := viper.BindPFlag("ollama.generation.no-cache", askCmd.Flags().Lookup("no-cache")); err != nil {
+		fmt.Println("Failed to bind property:", err)
+	}
 }
