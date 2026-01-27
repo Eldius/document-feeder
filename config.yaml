@@ -9,11 +9,16 @@ ollama:
     model: nomic-embed-text
     chunk_size: 1024
     chunk_overlap: 150
-# Default configuration for mxbai-embed-large (context length: 512)
-#  embedding:
-#    model: mxbai-embed-large
-#    chunk_size: 256
-#    chunk_overlap: 30
+  # Default configuration for mxbai-embed-large (context length: 512)
+  #  embedding:
+  #    model: mxbai-embed-large
+  #    model: deepseek-r1:7b
+  #    chunk_size: 256
+  #    chunk_overlap: 30
+  #  embedding:
+  #    model: deepseek-r1:7b
+  #    chunk_size: 65536
+  #    chunk_overlap: 9830
   generation:
 #    model: llama3:8b-instruct-q4_K_M
 #    model: deepseek-r1:1.5b
