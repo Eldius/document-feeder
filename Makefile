@@ -60,3 +60,15 @@ models-ls:
 
 models-ps:
 	go run ./cmd/cli/ models ps
+
+validate: test linter vulncheck
+	@echo "Validation completed!"
+
+test:
+	go test -cover ./...
+
+vulncheck:
+	go tool govulncheck ./...
+
+linter:
+	golangci-lint run
