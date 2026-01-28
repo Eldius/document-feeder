@@ -1,0 +1,10 @@
+image: golang:1.25.6
+
+pipelines:
+  default:
+    - step:
+        name: validate
+        caches:
+          - go
+        script:
+          - make validate
