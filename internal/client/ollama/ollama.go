@@ -6,9 +6,40 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/eldius/document-feeder/internal/config"
+	"github.com/eldius/initial-config-go/httpclient"
 )
 
-func (c *OllamaClient) EmbeddingFuncSingleShot(ctx context.Context, text string) ([]float32, error) {
+type OllamaClient interface {
+	EmbeddingFuncSingleShot(ctx context.Context, text string) ([]float32, error)
+	EmbeddingFuncKeepAlive(ctx context.Context, text string) ([]float32, error)
+	EmbeddingFunc(ctx context.Context, text string) ([]float32, error)
+	EmbeddingCall(ctx context.Context, reqPayload OllamaEmbeddingRequest) (*OllamaEmbeddingResponse, error)
+	ChatFunc(ctx context.Context, prompt string, think bool, opts ...GenerationOption) (*OllamaChatResponse, error)
+	GenerateFunc(ctx context.Context, prompt string, opts ...GenerationOption) (*OllamaGenerateResponse, error)
+	ListModels(ctx context.Context) (*OllamaModelsResponse, error)
+	RunningModels(ctx context.Context) (*OllamaModelsResponse, error)
+}
+type client struct {
+	c                  *http.Client
+	endpoint           string
+	embeddingModel     string
+	embeddingBatchSize int
+	generationModel    string
+}
+
+func NewOllamaClient() OllamaClient {
+	return &client{
+		c:                  httpclient.NewHTTPClient(),
+		endpoint:           config.GetOllamaEndpoint(),
+		embeddingModel:     config.GetOllamaEmbeddingModel(),
+		embeddingBatchSize: config.GetOllamaEmbeddingChunkSize(),
+		generationModel:    config.GetOllamaGenerationModel(),
+	}
+}
+
+func (c *client) EmbeddingFuncSingleShot(ctx context.Context, text string) ([]float32, error) {
 	res, err := c.EmbeddingCall(ctx, OllamaEmbeddingRequest{
 		Model:     c.embeddingModel,
 		Input:     []string{text},
@@ -20,7 +51,7 @@ func (c *OllamaClient) EmbeddingFuncSingleShot(ctx context.Context, text string)
 	return res.Embeddings[0], err
 }
 
-func (c *OllamaClient) EmbeddingFuncKeepAlive(ctx context.Context, text string) ([]float32, error) {
+func (c *client) EmbeddingFuncKeepAlive(ctx context.Context, text string) ([]float32, error) {
 	res, err := c.EmbeddingCall(ctx, OllamaEmbeddingRequest{
 		Model:     c.embeddingModel,
 		Input:     []string{text},
@@ -32,7 +63,7 @@ func (c *OllamaClient) EmbeddingFuncKeepAlive(ctx context.Context, text string) 
 	return res.Embeddings[0], err
 }
 
-func (c *OllamaClient) EmbeddingFunc(ctx context.Context, text string) ([]float32, error) {
+func (c *client) EmbeddingFunc(ctx context.Context, text string) ([]float32, error) {
 	res, err := c.EmbeddingCall(ctx, OllamaEmbeddingRequest{
 		Model: c.embeddingModel,
 		Input: []string{text},
@@ -43,7 +74,7 @@ func (c *OllamaClient) EmbeddingFunc(ctx context.Context, text string) ([]float3
 	return res.Embeddings[0], err
 }
 
-func (c *OllamaClient) EmbeddingCall(ctx context.Context, reqPayload OllamaEmbeddingRequest) (*OllamaEmbeddingResponse, error) {
+func (c *client) EmbeddingCall(ctx context.Context, reqPayload OllamaEmbeddingRequest) (*OllamaEmbeddingResponse, error) {
 	b, err := json.Marshal(reqPayload)
 	if err != nil {
 		return nil, fmt.Errorf("marshalling request payload: %w", err)
@@ -191,7 +222,7 @@ func WithNumThread(numThread int) GenerationOption {
 	}
 }
 
-func (c *OllamaClient) ChatFunc(ctx context.Context, prompt string, think bool, opts ...GenerationOption) (*OllamaChatResponse, error) {
+func (c *client) ChatFunc(ctx context.Context, prompt string, think bool, opts ...GenerationOption) (*OllamaChatResponse, error) {
 	options := defaultOllamaGenerationOptions()
 	for _, opt := range opts {
 		opt(&options)
@@ -230,7 +261,7 @@ func (c *OllamaClient) ChatFunc(ctx context.Context, prompt string, think bool, 
 	return &response, nil
 }
 
-func (c *OllamaClient) GenerateFunc(ctx context.Context, prompt string, opts ...GenerationOption) (*OllamaGenerateResponse, error) {
+func (c *client) GenerateFunc(ctx context.Context, prompt string, opts ...GenerationOption) (*OllamaGenerateResponse, error) {
 	options := defaultOllamaGenerationOptions()
 	for _, opt := range opts {
 		opt(&options)
@@ -265,7 +296,7 @@ func (c *OllamaClient) GenerateFunc(ctx context.Context, prompt string, opts ...
 	return &response, nil
 }
 
-func (c *OllamaClient) ListModels(ctx context.Context) (*OllamaModelsResponse, error) {
+func (c *client) ListModels(ctx context.Context) (*OllamaModelsResponse, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint+"/api/tags", nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
@@ -284,7 +315,7 @@ func (c *OllamaClient) ListModels(ctx context.Context) (*OllamaModelsResponse, e
 	return &response, nil
 }
 
-func (c *OllamaClient) RunningModels(ctx context.Context) (*OllamaModelsResponse, error) {
+func (c *client) RunningModels(ctx context.Context) (*OllamaModelsResponse, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint+"/api/ps", nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)

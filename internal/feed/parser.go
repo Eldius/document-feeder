@@ -3,11 +3,12 @@ package feed
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/eldius/document-feeder/internal/model"
 	"github.com/eldius/initial-config-go/httpclient"
 	"github.com/mmcdole/gofeed"
 	ext "github.com/mmcdole/gofeed/extensions"
-	"net/http"
 )
 
 var (

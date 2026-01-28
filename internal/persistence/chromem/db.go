@@ -26,7 +26,14 @@ const (
 	answerCollectionName  = "answers"
 )
 
-type DocumentVectorizer struct {
+type DocumentVectorizer interface {
+	Search(ctx context.Context, term string, maxResults int) ([]chromem.Result, error)
+	Save(ctx context.Context, feed *model.Feed) error
+	SaveGenerationCache(ctx context.Context, cache *model.AnswerCache) (string, error)
+	FindCacheID(ctx context.Context, question string, similarityThreshold float32) (string, error)
+}
+
+type vectorizer struct {
 	db                *chromem.DB
 	docsCollection    *chromem.Collection
 	answersCollection *chromem.Collection
@@ -40,10 +47,10 @@ type DocumentVectorizer struct {
 func NewDocumentVectorizer(
 	db *chromem.DB,
 	textSplitter textsplitter.TextSplitter,
-	ollamaClient *ollama.OllamaClient,
+	ollamaClient ollama.OllamaClient,
 	embeddingModel string,
 	chunkSize, chunkOverlap int,
-) (*DocumentVectorizer, error) {
+) (DocumentVectorizer, error) {
 	docsCollection, err := db.GetOrCreateCollection(articleCollectionName, map[string]string{}, NewEmbeddingFuncOllama(embeddingModel, ollamaClient))
 	if err != nil {
 		return nil, err
@@ -54,7 +61,7 @@ func NewDocumentVectorizer(
 		return nil, err
 	}
 
-	de := &DocumentVectorizer{
+	de := &vectorizer{
 		db:                db,
 		embeddingModel:    embeddingModel,
 		chunkSize:         chunkSize,
@@ -67,7 +74,7 @@ func NewDocumentVectorizer(
 	return de, nil
 }
 
-func NewDefaultDocumentVectorizer() (*DocumentVectorizer, error) {
+func NewDefaultDocumentVectorizer() (DocumentVectorizer, error) {
 	db, err := chromem.NewPersistentDB("data/doc.db", true)
 	if err != nil {
 		return nil, fmt.Errorf("opening db: %w", err)
@@ -90,7 +97,7 @@ func NewDefaultDocumentVectorizer() (*DocumentVectorizer, error) {
 	)
 }
 
-func (d *DocumentVectorizer) Search(ctx context.Context, term string, maxResults int) ([]chromem.Result, error) {
+func (d *vectorizer) Search(ctx context.Context, term string, maxResults int) ([]chromem.Result, error) {
 	log := logs.NewLogger(ctx, logs.KeyValueData{
 		"term":        term,
 		"max_results": maxResults,
@@ -110,11 +117,11 @@ func (d *DocumentVectorizer) Search(ctx context.Context, term string, maxResults
 	return results, err
 }
 
-func (d *DocumentVectorizer) SearchDocs(ctx context.Context, term string, maxResults int) ([]chromem.Result, error) {
+func (d *vectorizer) SearchDocs(ctx context.Context, term string, maxResults int) ([]chromem.Result, error) {
 	return d.docsCollection.Query(ctx, term, maxResults, nil, nil)
 }
 
-func (d *DocumentVectorizer) Save(ctx context.Context, feed *model.Feed) error {
+func (d *vectorizer) Save(ctx context.Context, feed *model.Feed) error {
 	if feed == nil {
 		return nil
 	}
@@ -168,7 +175,7 @@ func (d *DocumentVectorizer) Save(ctx context.Context, feed *model.Feed) error {
 	return nil
 }
 
-func (d *DocumentVectorizer) SaveGenerationCache(ctx context.Context, cache *model.AnswerCache) (string, error) {
+func (d *vectorizer) SaveGenerationCache(ctx context.Context, cache *model.AnswerCache) (string, error) {
 	id := cacheID(cache)
 	docsToAdd := []chromem.Document{{
 		ID:       id,
@@ -181,7 +188,7 @@ func (d *DocumentVectorizer) SaveGenerationCache(ctx context.Context, cache *mod
 	return id, nil
 }
 
-func (d *DocumentVectorizer) FindCacheID(ctx context.Context, question string, similarityThreshold float32) (string, error) {
+func (d *vectorizer) FindCacheID(ctx context.Context, question string, similarityThreshold float32) (string, error) {
 	queryResults, err := d.answersCollection.Query(ctx, question, 1, nil, nil)
 	if err != nil {
 		return "", fmt.Errorf("querying documents: %w", err)
@@ -192,7 +199,7 @@ func (d *DocumentVectorizer) FindCacheID(ctx context.Context, question string, s
 	return queryResults[0].ID, nil
 }
 
-func (d *DocumentVectorizer) htmlParse(ctx context.Context, article model.Article) ([]schema.Document, error) {
+func (d *vectorizer) htmlParse(ctx context.Context, article model.Article) ([]schema.Document, error) {
 	return documentloaders.NewHTML(strings.NewReader(article.Content)).
 		LoadAndSplit(
 			ctx,

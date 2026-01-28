@@ -22,16 +22,16 @@ var (
 )
 
 type FeedAdapter struct {
-	r                        *storm.Repository
-	docs                     *chromem.DocumentVectorizer
+	r                        storm.Repository
+	docs                     chromem.DocumentVectorizer
 	p                        feed.Parser
 	tmpl                     *template.Template
-	ollama                   *ollama.OllamaClient
+	ollama                   ollama.OllamaClient
 	cacheSimilarityThreshold float32
 	cacheEnabled             bool
 }
 
-func NewFeedAdapter(r *storm.Repository, p feed.Parser, docs *chromem.DocumentVectorizer, ollama *ollama.OllamaClient, tmpl *template.Template, cacheSimilarityThreshold float32, cacheEnabled bool) *FeedAdapter {
+func NewFeedAdapter(r storm.Repository, p feed.Parser, docs chromem.DocumentVectorizer, ollama ollama.OllamaClient, tmpl *template.Template, cacheSimilarityThreshold float32, cacheEnabled bool) *FeedAdapter {
 	return &FeedAdapter{
 		r:                        r,
 		p:                        p,

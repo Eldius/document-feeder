@@ -3,30 +3,8 @@ package ollama
 import (
 	"math/rand/v2"
 
-	"github.com/eldius/document-feeder/internal/config"
-	"github.com/eldius/initial-config-go/httpclient"
-
-	"net/http"
 	"time"
 )
-
-type OllamaClient struct {
-	c                  *http.Client
-	endpoint           string
-	embeddingModel     string
-	embeddingBatchSize int
-	generationModel    string
-}
-
-func NewOllamaClient() *OllamaClient {
-	return &OllamaClient{
-		c:                  httpclient.NewHTTPClient(),
-		endpoint:           config.GetOllamaEndpoint(),
-		embeddingModel:     config.GetOllamaEmbeddingModel(),
-		embeddingBatchSize: config.GetOllamaEmbeddingChunkSize(),
-		generationModel:    config.GetOllamaGenerationModel(),
-	}
-}
 
 type OllamaEmbeddingRequest struct {
 	Model     string   `json:"model"`

@@ -11,31 +11,40 @@ import (
 	"github.com/eldius/initial-config-go/logs"
 )
 
-type Repository struct {
+type Repository interface {
+	Close() error
+	Persist(context.Context, *model.Feed) error
+	All(context.Context) ([]*model.Feed, error)
+	ArticleByLink(context.Context, string, string) (*model.Article, error)
+	SaveGeneratedCache(context.Context, *model.AnswerCache) error
+	FindGeneratedCache(context.Context, string) (*model.AnswerCache, error)
+}
+
+type repository struct {
 	db *storm.DB
 }
 
-func NewRepository() *Repository {
+func NewRepository() Repository {
 	_ = os.MkdirAll("data", 0700)
 	db, _ := storm.Open("data/feeds.db")
-	return &Repository{db: db}
+	return &repository{db: db}
 }
 
-func (r *Repository) Close() error {
+func (r *repository) Close() error {
 	return r.db.Close()
 }
 
-func (r *Repository) Persist(_ context.Context, f *model.Feed) error {
+func (r *repository) Persist(_ context.Context, f *model.Feed) error {
 	return r.db.Save(f)
 }
 
-func (r *Repository) All(_ context.Context) ([]*model.Feed, error) {
+func (r *repository) All(_ context.Context) ([]*model.Feed, error) {
 	var feeds []*model.Feed
 	err := r.db.All(&feeds)
 	return feeds, err
 }
 
-func (r *Repository) ArticleByLink(_ context.Context, feedTitle, articleLink string) (*model.Article, error) {
+func (r *repository) ArticleByLink(_ context.Context, feedTitle, articleLink string) (*model.Article, error) {
 	log := logs.NewLogger(context.Background(), logs.KeyValueData{
 		"feed_title":   feedTitle,
 		"article_link": articleLink,
@@ -57,11 +66,11 @@ func (r *Repository) ArticleByLink(_ context.Context, feedTitle, articleLink str
 	return nil, nil
 }
 
-func (r *Repository) SaveGeneratedCache(_ context.Context, answer *model.AnswerCache) error {
+func (r *repository) SaveGeneratedCache(_ context.Context, answer *model.AnswerCache) error {
 	return r.db.Save(answer)
 }
 
-func (r *Repository) FindGeneratedCache(_ context.Context, id string) (*model.AnswerCache, error) {
+func (r *repository) FindGeneratedCache(_ context.Context, id string) (*model.AnswerCache, error) {
 	var answer model.AnswerCache
 	if err := r.db.Select(q.Eq("ID", id)).First(&answer); err != nil {
 		return nil, fmt.Errorf("finding generated cache: %w", err)

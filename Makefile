@@ -16,7 +16,8 @@ add:
 				--feed "https://gosamples.dev/index.xml" \
 				--feed "https://trinhhieu668.wordpress.com/feed/" \
 				--feed "https://dev.to/feed/with_code_example" \
-				--feed "https://golangbot.com/index.xml"
+				--feed "https://golangbot.com/index.xml" \
+				--feed "https://cprss.s3.amazonaws.com/golangweekly.com.xml"
 
 
 list:
