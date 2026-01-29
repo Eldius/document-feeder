@@ -62,6 +62,9 @@ models-ls:
 models-ps:
 	go run ./cmd/cli/ models ps
 
+models-autoconf:
+	go run ./cmd/cli/ models autoconfigure --model=deepseek-r1:7b
+
 validate: test linter vulncheck
 	@echo "Validation completed!"
 

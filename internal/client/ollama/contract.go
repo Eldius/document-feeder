@@ -129,3 +129,39 @@ type OllamaModelSummary struct {
 	ParameterSize     string   `json:"parameter_size"`
 	QuantizationLevel string   `json:"quantization_level"`
 }
+
+type OllamaModelDetailsRequest struct {
+	Model   string `json:"model"`
+	Verbose bool   `json:"verbose"`
+}
+
+type OllamaModelDetailsResponse struct {
+	License      string       `json:"license"`
+	ModelFile    string       `json:"modelfile"`
+	Parameters   string       `json:"parameters"`
+	Template     string       `json:"template"`
+	Details      ModelDetails `json:"details"`
+	ModelInfo    ModelInfo    `json:"model_info"`
+	Tensors      []Tensors    `json:"tensors"`
+	Capabilities []string     `json:"capabilities"`
+	ModifiedAt   string       `json:"modified_at"`
+}
+type ModelDetails struct {
+	ParentModel       string   `json:"parent_model"`
+	Format            string   `json:"format"`
+	Family            string   `json:"family"`
+	Families          []string `json:"families"`
+	ParameterSize     string   `json:"parameter_size"`
+	QuantizationLevel string   `json:"quantization_level"`
+}
+type ModelInfo map[string]any
+
+type Tensors struct {
+	Name  string `json:"name"`
+	Type  string `json:"type"`
+	Shape []int  `json:"shape"`
+}
+
+func (r OllamaModelDetailsResponse) ContextLength() int {
+	return int(r.ModelInfo[r.Details.Family+".context_length"].(float64))
+}

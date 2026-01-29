@@ -20,7 +20,10 @@ type OllamaClient interface {
 	GenerateFunc(ctx context.Context, prompt string, opts ...GenerationOption) (*OllamaGenerateResponse, error)
 	ListModels(ctx context.Context) (*OllamaModelsResponse, error)
 	RunningModels(ctx context.Context) (*OllamaModelsResponse, error)
+	ModelDetailsCall(ctx context.Context, payload OllamaModelDetailsRequest) (*OllamaModelDetailsResponse, error)
+	ModelDetails(ctx context.Context, model string) (*OllamaModelDetailsResponse, error)
 }
+
 type client struct {
 	c                  *http.Client
 	endpoint           string
@@ -332,4 +335,32 @@ func (c *client) RunningModels(ctx context.Context) (*OllamaModelsResponse, erro
 	}
 
 	return &response, nil
+}
+
+func (c *client) ModelDetailsCall(ctx context.Context, payload OllamaModelDetailsRequest) (*OllamaModelDetailsResponse, error) {
+	b, err := json.Marshal(&payload)
+	if err != nil {
+		return nil, fmt.Errorf("marshalling request payload: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint+"/api/show", bytes.NewBuffer(b))
+	if err != nil {
+		return nil, err
+	}
+	res, err := c.c.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = res.Body.Close() }()
+
+	var response OllamaModelDetailsResponse
+	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("decoding response: %w", err)
+	}
+
+	return &response, nil
+}
+
+func (c *client) ModelDetails(ctx context.Context, model string) (*OllamaModelDetailsResponse, error) {
+	return c.ModelDetailsCall(ctx, OllamaModelDetailsRequest{Model: model})
 }

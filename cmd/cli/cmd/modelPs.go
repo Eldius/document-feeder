@@ -25,7 +25,7 @@ var modelPsCmd = &cobra.Command{
 }
 
 func init() {
-	modelLsCmd.AddCommand(modelPsCmd)
+	modelsCmd.AddCommand(modelPsCmd)
 
 	// Here you will define your flags and configuration settings.
 

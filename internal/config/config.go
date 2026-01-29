@@ -1,6 +1,9 @@
 package config
 
 import (
+	"os"
+	"time"
+
 	"github.com/eldius/initial-config-go/setup"
 	"github.com/spf13/viper"
 )
@@ -66,4 +69,30 @@ func GetOllamaGenerationCacheEnabled() bool {
 
 func GetOllamaGenerationCacheSimilarityThreshold() float32 {
 	return float32(viper.GetFloat64(OllamaGenerationCacheSimilarityThresholdProp.Key))
+}
+
+func SetOllamaEmbeddingModel(model string) {
+	viper.Set(OllamaEmbeddingModelProp.Key, model)
+}
+
+func SetOllamaEmbeddingChunkSize(chunkSize int) {
+	viper.Set(OllamaEmbeddingChunkSizeProp.Key, chunkSize)
+}
+
+func SetOllamaEmbeddingChunkOverlap(chunkOverlap int) {
+	viper.Set(OllamaEmbeddingChunkOverlapProp.Key, chunkOverlap)
+}
+
+func PersistConfig() error {
+	cfgFile := viper.ConfigFileUsed()
+	curCffFileContent, err := os.ReadFile(cfgFile)
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(cfgFile+"."+time.Now().Format("2006-01-02_15-04-05")+".yaml", curCffFileContent, 0644); err != nil {
+		return err
+	}
+
+	return viper.WriteConfig()
 }
