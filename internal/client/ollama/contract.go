@@ -6,13 +6,13 @@ import (
 	"time"
 )
 
-type OllamaEmbeddingRequest struct {
+type EmbeddingRequest struct {
 	Model     string   `json:"model"`
 	Input     []string `json:"input"`
 	KeepAlive int      `json:"keep_alive"`
 }
 
-type OllamaEmbeddingResponse struct {
+type EmbeddingResponse struct {
 	Model           string      `json:"model"`
 	Embeddings      [][]float32 `json:"embeddings"`
 	TotalDuration   int         `json:"total_duration"`
@@ -20,21 +20,22 @@ type OllamaEmbeddingResponse struct {
 	PromptEvalCount int         `json:"prompt_eval_count"`
 }
 
-type ollamaChatRequest struct {
-	Model    string               `json:"model"`
-	Messages []OllamaChatMessage  `json:"messages"`
-	Stream   bool                 `json:"stream"`
-	Think    bool                 `json:"think"`
-	Options  ollamaOptionsRequest `|json:"options,omitempty"`
+type ChatRequest struct {
+	Model     string         `json:"model"`
+	Messages  []ChatMessage  `json:"messages"`
+	Stream    bool           `json:"stream"`
+	Think     bool           `json:"think"`
+	KeepAlive int            `json:"keep_alive"`
+	Options   OptionsRequest `|json:"options,omitempty"`
 }
 
-type OllamaChatMessage struct {
+type ChatMessage struct {
 	Role     string `json:"role"`
 	Content  string `json:"content"`
 	Thinking string `json:"thinking,omitempty"`
 }
 
-type ollamaOptionsRequest struct {
+type OptionsRequest struct {
 	NumKeep          int      `json:"num_keep,omitempty"`
 	Seed             int      `json:"seed,omitempty"`
 	NumPredict       int      `json:"num_predict,omitempty"`
@@ -58,9 +59,9 @@ type ollamaOptionsRequest struct {
 	NumThread        int      `json:"num_thread,omitempty"`
 }
 
-func defaultOllamaGenerationOptions() ollamaOptionsRequest {
+func defaultOllamaGenerationOptions() OptionsRequest {
 	randomSeed := rand.IntN(100)
-	return ollamaOptionsRequest{
+	return OptionsRequest{
 		NumKeep:     10,
 		Seed:        randomSeed,
 		NumPredict:  1,
@@ -73,21 +74,21 @@ func defaultOllamaGenerationOptions() ollamaOptionsRequest {
 	}
 }
 
-type OllamaChatResponse struct {
-	Model              string            `json:"model"`
-	CreatedAt          time.Time         `json:"created_at"`
-	Message            OllamaChatMessage `json:"message"`
-	DoneReason         string            `json:"done_reason"`
-	Done               bool              `json:"done"`
-	TotalDuration      int64             `json:"total_duration"`
-	LoadDuration       int64             `json:"load_duration"`
-	PromptEvalCount    int               `json:"prompt_eval_count"`
-	PromptEvalDuration int64             `json:"prompt_eval_duration"`
-	EvalCount          int               `json:"eval_count"`
-	EvalDuration       int64             `json:"eval_duration"`
+type ChatResponse struct {
+	Model              string      `json:"model"`
+	CreatedAt          time.Time   `json:"created_at"`
+	Message            ChatMessage `json:"message"`
+	DoneReason         string      `json:"done_reason"`
+	Done               bool        `json:"done"`
+	TotalDuration      int64       `json:"total_duration"`
+	LoadDuration       int64       `json:"load_duration"`
+	PromptEvalCount    int         `json:"prompt_eval_count"`
+	PromptEvalDuration int64       `json:"prompt_eval_duration"`
+	EvalCount          int         `json:"eval_count"`
+	EvalDuration       int64       `json:"eval_duration"`
 }
 
-type OllamaGenerateResponse struct {
+type GenerateResponse struct {
 	Model              string    `json:"model"`
 	CreatedAt          time.Time `json:"created_at"`
 	Response           string    `json:"response"`
@@ -101,28 +102,29 @@ type OllamaGenerateResponse struct {
 	EvalDuration       int64     `json:"eval_duration"`
 }
 
-type ollamaGenerateRequest struct {
-	Model   string               `json:"model"`
-	Prompt  string               `json:"prompt"`
-	Stream  bool                 `json:"stream"`
-	Options ollamaOptionsRequest `json:"options"`
+type GenerateRequest struct {
+	Model     string         `json:"model"`
+	Prompt    string         `json:"prompt"`
+	Stream    bool           `json:"stream"`
+	KeepAlive int            `json:"keep_alive"`
+	Options   OptionsRequest `json:"options"`
 }
 
-type GenerationOption func(*ollamaOptionsRequest)
+type GenerationOption func(*OptionsRequest)
 
-type OllamaModelsResponse struct {
-	Models []OllamaModel `json:"models"`
+type ModelsResponse struct {
+	Models []Model `json:"models"`
 }
 
-type OllamaModel struct {
-	Name       string             `json:"name"`
-	ModifiedAt time.Time          `json:"modified_at"`
-	Size       int64              `json:"size"`
-	Digest     string             `json:"digest"`
-	Details    OllamaModelSummary `json:"details"`
+type Model struct {
+	Name       string       `json:"name"`
+	ModifiedAt time.Time    `json:"modified_at"`
+	Size       int64        `json:"size"`
+	Digest     string       `json:"digest"`
+	Details    ModelSummary `json:"details"`
 }
 
-type OllamaModelSummary struct {
+type ModelSummary struct {
 	Format            string   `json:"format"`
 	Family            string   `json:"family"`
 	Families          []string `json:"families"`
@@ -130,12 +132,12 @@ type OllamaModelSummary struct {
 	QuantizationLevel string   `json:"quantization_level"`
 }
 
-type OllamaModelDetailsRequest struct {
+type ModelDetailsRequest struct {
 	Model   string `json:"model"`
 	Verbose bool   `json:"verbose"`
 }
 
-type OllamaModelDetailsResponse struct {
+type ModelDetailsResponse struct {
 	License      string       `json:"license"`
 	ModelFile    string       `json:"modelfile"`
 	Parameters   string       `json:"parameters"`
@@ -162,6 +164,6 @@ type Tensors struct {
 	Shape []int  `json:"shape"`
 }
 
-func (r OllamaModelDetailsResponse) ContextLength() int {
+func (r ModelDetailsResponse) ContextLength() int {
 	return int(r.ModelInfo[r.Details.Family+".context_length"].(float64))
 }

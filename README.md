@@ -5,4 +5,4 @@ A simple POC to learn how to manage a knowledge database and use it with an LLM.
 ## reference links
 
 - [Show model details - Ollama API Docs](https://docs.ollama.com/api-reference/show-model-details)
-
+- [github.com/prometheus/prometheus/tsdb - Go Pkg](https://pkg.go.dev/github.com/prometheus/prometheus/tsdb)

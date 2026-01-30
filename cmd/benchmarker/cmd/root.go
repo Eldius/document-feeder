@@ -3,10 +3,12 @@ package cmd
 import (
 	"os"
 
+	"github.com/eldius/document-feeder/internal/adapter"
+	"github.com/eldius/document-feeder/internal/config"
+	"github.com/eldius/initial-config-go/configs"
+	"github.com/eldius/initial-config-go/setup"
 	"github.com/spf13/cobra"
 )
-
-
 
 // rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
@@ -20,8 +22,41 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+	PersistentPreRunE: setup.PersistentPreRunE(
+		"document-feeder-nemchmarker",
+		setup.WithConfigFileToBeUsed(cfgFile),
+		setup.WithDefaultCfgFileLocations("~", ".config", "."),
+		setup.WithEnvPrefix("BENCHMARKER"),
+		setup.WithDefaultCfgFileName("config"),
+		setup.WithDefaultValues(configs.DefaultConfigValuesLogFileMap),
+		setup.WithProps(
+			config.OllamaEndPointProp,
+			config.OllamaEmbeddingModelProp,
+			config.OllamaEmbeddingChunkSizeProp,
+			config.OllamaEmbeddingChunkOverlapProp,
+			config.OllamaGenerationModelProp,
+			config.OllamaGenerationCacheEnabledProp,
+			config.OllamaGenerationNoCacheProp,
+		),
+	),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		c, err := adapter.NewBenchmarkFromConfig()
+		if err != nil {
+			return err
+		}
+
+		if err := c.Run(cmd.Context(), models); err != nil {
+			return err
+		}
+
+		return nil
+	},
 }
+
+var (
+	cfgFile string
+	models  []string
+)
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
@@ -33,15 +68,6 @@ func Execute() {
 }
 
 func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.document-feed-embedder.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./config.yaml)")
+	rootCmd.PersistentFlags().StringSliceVar(&models, "model", []string{"deepseek-r1:1.5b", "llama3:8b-instruct-q4_K_M", "tinyllama:latest"}, "ollama model to use")
 }
-
-

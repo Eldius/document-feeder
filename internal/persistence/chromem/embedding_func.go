@@ -22,7 +22,7 @@ const (
 // See https://ollama.com/library/nomic-embed-text
 // baseURLOllama is the base URL of the Ollama API. If it's empty,
 // "http://localhost:11434/api" is used.
-func NewEmbeddingFuncOllama(model string, oc ollama.OllamaClient) chromem.EmbeddingFunc {
+func NewEmbeddingFuncOllama(model string, oc ollama.Client) chromem.EmbeddingFunc {
 
 	var checkedNormalized bool
 	checkNormalized := sync.Once{}
@@ -33,7 +33,7 @@ func NewEmbeddingFuncOllama(model string, oc ollama.OllamaClient) chromem.Embedd
 			"text":  text,
 		})
 		// Prepare the request body.
-		reqBody := ollama.OllamaEmbeddingRequest{
+		reqBody := ollama.EmbeddingRequest{
 			Model: model,
 			Input: []string{text},
 		}

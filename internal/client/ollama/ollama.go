@@ -11,17 +11,18 @@ import (
 	"github.com/eldius/initial-config-go/httpclient"
 )
 
-type OllamaClient interface {
+type Client interface {
 	EmbeddingFuncSingleShot(ctx context.Context, text string) ([]float32, error)
 	EmbeddingFuncKeepAlive(ctx context.Context, text string) ([]float32, error)
 	EmbeddingFunc(ctx context.Context, text string) ([]float32, error)
-	EmbeddingCall(ctx context.Context, reqPayload OllamaEmbeddingRequest) (*OllamaEmbeddingResponse, error)
-	ChatFunc(ctx context.Context, prompt string, think bool, opts ...GenerationOption) (*OllamaChatResponse, error)
-	GenerateFunc(ctx context.Context, prompt string, opts ...GenerationOption) (*OllamaGenerateResponse, error)
-	ListModels(ctx context.Context) (*OllamaModelsResponse, error)
-	RunningModels(ctx context.Context) (*OllamaModelsResponse, error)
-	ModelDetailsCall(ctx context.Context, payload OllamaModelDetailsRequest) (*OllamaModelDetailsResponse, error)
-	ModelDetails(ctx context.Context, model string) (*OllamaModelDetailsResponse, error)
+	EmbeddingCall(ctx context.Context, reqPayload EmbeddingRequest) (*EmbeddingResponse, error)
+	ChatFunc(ctx context.Context, prompt string, think bool, opts ...GenerationOption) (*ChatResponse, error)
+	GenerateFunc(ctx context.Context, prompt string, opts ...GenerationOption) (*GenerateResponse, error)
+	ListModels(ctx context.Context) (*ModelsResponse, error)
+	RunningModels(ctx context.Context) (*ModelsResponse, error)
+	ModelDetailsCall(ctx context.Context, payload ModelDetailsRequest) (*ModelDetailsResponse, error)
+	ModelDetails(ctx context.Context, model string) (*ModelDetailsResponse, error)
+	GenerateCall(ctx context.Context, reqPayload GenerateRequest) (*GenerateResponse, error)
 }
 
 type client struct {
@@ -32,7 +33,7 @@ type client struct {
 	generationModel    string
 }
 
-func NewOllamaClient() OllamaClient {
+func NewOllamaClient() Client {
 	return &client{
 		c:                  httpclient.NewHTTPClient(),
 		endpoint:           config.GetOllamaEndpoint(),
@@ -43,7 +44,7 @@ func NewOllamaClient() OllamaClient {
 }
 
 func (c *client) EmbeddingFuncSingleShot(ctx context.Context, text string) ([]float32, error) {
-	res, err := c.EmbeddingCall(ctx, OllamaEmbeddingRequest{
+	res, err := c.EmbeddingCall(ctx, EmbeddingRequest{
 		Model:     c.embeddingModel,
 		Input:     []string{text},
 		KeepAlive: 0,
@@ -55,7 +56,7 @@ func (c *client) EmbeddingFuncSingleShot(ctx context.Context, text string) ([]fl
 }
 
 func (c *client) EmbeddingFuncKeepAlive(ctx context.Context, text string) ([]float32, error) {
-	res, err := c.EmbeddingCall(ctx, OllamaEmbeddingRequest{
+	res, err := c.EmbeddingCall(ctx, EmbeddingRequest{
 		Model:     c.embeddingModel,
 		Input:     []string{text},
 		KeepAlive: 0,
@@ -67,7 +68,7 @@ func (c *client) EmbeddingFuncKeepAlive(ctx context.Context, text string) ([]flo
 }
 
 func (c *client) EmbeddingFunc(ctx context.Context, text string) ([]float32, error) {
-	res, err := c.EmbeddingCall(ctx, OllamaEmbeddingRequest{
+	res, err := c.EmbeddingCall(ctx, EmbeddingRequest{
 		Model: c.embeddingModel,
 		Input: []string{text},
 	})
@@ -77,7 +78,7 @@ func (c *client) EmbeddingFunc(ctx context.Context, text string) ([]float32, err
 	return res.Embeddings[0], err
 }
 
-func (c *client) EmbeddingCall(ctx context.Context, reqPayload OllamaEmbeddingRequest) (*OllamaEmbeddingResponse, error) {
+func (c *client) EmbeddingCall(ctx context.Context, reqPayload EmbeddingRequest) (*EmbeddingResponse, error) {
 	b, err := json.Marshal(reqPayload)
 	if err != nil {
 		return nil, fmt.Errorf("marshalling request payload: %w", err)
@@ -91,7 +92,7 @@ func (c *client) EmbeddingCall(ctx context.Context, reqPayload OllamaEmbeddingRe
 		return nil, fmt.Errorf("executing request: %w", err)
 	}
 	defer func() { _ = res.Body.Close() }()
-	var embeddings OllamaEmbeddingResponse
+	var embeddings EmbeddingResponse
 	if err := json.NewDecoder(res.Body).Decode(&embeddings); err != nil {
 		return nil, fmt.Errorf("decoding response: %w", err)
 	}
@@ -100,140 +101,140 @@ func (c *client) EmbeddingCall(ctx context.Context, reqPayload OllamaEmbeddingRe
 }
 
 func WithNumKeep(numKeep int) GenerationOption {
-	return func(opts *ollamaOptionsRequest) {
+	return func(opts *OptionsRequest) {
 		opts.NumKeep = numKeep
 	}
 }
 
 func WithSeed(seed int) GenerationOption {
-	return func(opts *ollamaOptionsRequest) {
+	return func(opts *OptionsRequest) {
 		opts.Seed = seed
 	}
 }
 
 func WithNumPredict(numPredict int) GenerationOption {
-	return func(opts *ollamaOptionsRequest) {
+	return func(opts *OptionsRequest) {
 		opts.NumPredict = numPredict
 	}
 }
 
 func WithTopK(topK int) GenerationOption {
-	return func(opts *ollamaOptionsRequest) {
+	return func(opts *OptionsRequest) {
 		opts.TopK = topK
 	}
 }
 
 func WithTopP(topP float64) GenerationOption {
-	return func(opts *ollamaOptionsRequest) {
+	return func(opts *OptionsRequest) {
 		opts.TopP = topP
 	}
 }
 
 func WithMinP(minP float64) GenerationOption {
-	return func(opts *ollamaOptionsRequest) {
+	return func(opts *OptionsRequest) {
 		opts.MinP = minP
 	}
 }
 
 func WithTypicalP(typicalP float64) GenerationOption {
-	return func(opts *ollamaOptionsRequest) {
+	return func(opts *OptionsRequest) {
 		opts.TypicalP = typicalP
 	}
 }
 
 func WithRepeatLastN(repeatLastN int) GenerationOption {
-	return func(opts *ollamaOptionsRequest) {
+	return func(opts *OptionsRequest) {
 		opts.RepeatLastN = repeatLastN
 	}
 }
 
 func WithTemperature(temperature float64) GenerationOption {
-	return func(opts *ollamaOptionsRequest) {
+	return func(opts *OptionsRequest) {
 		opts.Temperature = temperature
 	}
 }
 
 func WithRepeatPenalty(repeatPenalty float64) GenerationOption {
-	return func(opts *ollamaOptionsRequest) {
+	return func(opts *OptionsRequest) {
 		opts.RepeatPenalty = repeatPenalty
 	}
 }
 
 func WithPresencePenalty(presencePenalty float64) GenerationOption {
-	return func(opts *ollamaOptionsRequest) {
+	return func(opts *OptionsRequest) {
 		opts.PresencePenalty = presencePenalty
 	}
 }
 
 func WithFrequencyPenalty(frequencyPenalty float64) GenerationOption {
-	return func(opts *ollamaOptionsRequest) {
+	return func(opts *OptionsRequest) {
 		opts.FrequencyPenalty = frequencyPenalty
 	}
 }
 
 func WithPenalizeNewline(penalizeNewline bool) GenerationOption {
-	return func(opts *ollamaOptionsRequest) {
+	return func(opts *OptionsRequest) {
 		opts.PenalizeNewline = penalizeNewline
 	}
 }
 
 func WithStop(stop []string) GenerationOption {
-	return func(opts *ollamaOptionsRequest) {
+	return func(opts *OptionsRequest) {
 		opts.Stop = stop
 	}
 }
 
 func WithNuma(numa bool) GenerationOption {
-	return func(opts *ollamaOptionsRequest) {
+	return func(opts *OptionsRequest) {
 		opts.Numa = numa
 	}
 }
 
 func WithNumCtx(numCtx int) GenerationOption {
-	return func(opts *ollamaOptionsRequest) {
+	return func(opts *OptionsRequest) {
 		opts.NumCtx = numCtx
 	}
 }
 
 func WithNumBatch(numBatch int) GenerationOption {
-	return func(opts *ollamaOptionsRequest) {
+	return func(opts *OptionsRequest) {
 		opts.NumBatch = numBatch
 	}
 }
 
 func WithNumGpu(numGpu int) GenerationOption {
-	return func(opts *ollamaOptionsRequest) {
+	return func(opts *OptionsRequest) {
 		opts.NumGpu = numGpu
 	}
 }
 
 func WithMainGpu(mainGpu int) GenerationOption {
-	return func(opts *ollamaOptionsRequest) {
+	return func(opts *OptionsRequest) {
 		opts.MainGpu = mainGpu
 	}
 }
 
 func WithUseMmap(useMmap bool) GenerationOption {
-	return func(opts *ollamaOptionsRequest) {
+	return func(opts *OptionsRequest) {
 		opts.UseMmap = useMmap
 	}
 }
 
 func WithNumThread(numThread int) GenerationOption {
-	return func(opts *ollamaOptionsRequest) {
+	return func(opts *OptionsRequest) {
 		opts.NumThread = numThread
 	}
 }
 
-func (c *client) ChatFunc(ctx context.Context, prompt string, think bool, opts ...GenerationOption) (*OllamaChatResponse, error) {
+func (c *client) ChatFunc(ctx context.Context, prompt string, think bool, opts ...GenerationOption) (*ChatResponse, error) {
 	options := defaultOllamaGenerationOptions()
 	for _, opt := range opts {
 		opt(&options)
 	}
 
-	reqPayload := ollamaChatRequest{
+	reqPayload := ChatRequest{
 		Model: c.generationModel,
-		Messages: []OllamaChatMessage{{
+		Messages: []ChatMessage{{
 			Role:    "user",
 			Content: prompt,
 		}},
@@ -257,26 +258,14 @@ func (c *client) ChatFunc(ctx context.Context, prompt string, think bool, opts .
 	}
 	defer func() { _ = res.Body.Close() }()
 
-	var response OllamaChatResponse
+	var response ChatResponse
 	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
 		return nil, fmt.Errorf("decoding response: %w", err)
 	}
 	return &response, nil
 }
 
-func (c *client) GenerateFunc(ctx context.Context, prompt string, opts ...GenerationOption) (*OllamaGenerateResponse, error) {
-	options := defaultOllamaGenerationOptions()
-	for _, opt := range opts {
-		opt(&options)
-	}
-
-	reqPayload := ollamaGenerateRequest{
-		Model:   c.generationModel,
-		Prompt:  prompt,
-		Stream:  false,
-		Options: options,
-	}
-
+func (c *client) GenerateCall(ctx context.Context, reqPayload GenerateRequest) (*GenerateResponse, error) {
 	b, err := json.Marshal(reqPayload)
 	if err != nil {
 		return nil, fmt.Errorf("marshalling request payload: %w", err)
@@ -292,14 +281,28 @@ func (c *client) GenerateFunc(ctx context.Context, prompt string, opts ...Genera
 	}
 	defer func() { _ = res.Body.Close() }()
 
-	var response OllamaGenerateResponse
+	var response GenerateResponse
 	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
 		return nil, fmt.Errorf("decoding response: %w", err)
 	}
 	return &response, nil
 }
 
-func (c *client) ListModels(ctx context.Context) (*OllamaModelsResponse, error) {
+func (c *client) GenerateFunc(ctx context.Context, prompt string, opts ...GenerationOption) (*GenerateResponse, error) {
+	options := defaultOllamaGenerationOptions()
+	for _, opt := range opts {
+		opt(&options)
+	}
+
+	return c.GenerateCall(ctx, GenerateRequest{
+		Model:   c.generationModel,
+		Prompt:  prompt,
+		Stream:  false,
+		Options: options,
+	})
+}
+
+func (c *client) ListModels(ctx context.Context) (*ModelsResponse, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint+"/api/tags", nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
@@ -310,7 +313,7 @@ func (c *client) ListModels(ctx context.Context) (*OllamaModelsResponse, error) 
 	}
 	defer func() { _ = res.Body.Close() }()
 
-	var response OllamaModelsResponse
+	var response ModelsResponse
 	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
 		return nil, fmt.Errorf("decoding response: %w", err)
 	}
@@ -318,7 +321,7 @@ func (c *client) ListModels(ctx context.Context) (*OllamaModelsResponse, error) 
 	return &response, nil
 }
 
-func (c *client) RunningModels(ctx context.Context) (*OllamaModelsResponse, error) {
+func (c *client) RunningModels(ctx context.Context) (*ModelsResponse, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint+"/api/ps", nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
@@ -329,7 +332,7 @@ func (c *client) RunningModels(ctx context.Context) (*OllamaModelsResponse, erro
 	}
 	defer func() { _ = res.Body.Close() }()
 
-	var response OllamaModelsResponse
+	var response ModelsResponse
 	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
 		return nil, fmt.Errorf("decoding response: %w", err)
 	}
@@ -337,7 +340,7 @@ func (c *client) RunningModels(ctx context.Context) (*OllamaModelsResponse, erro
 	return &response, nil
 }
 
-func (c *client) ModelDetailsCall(ctx context.Context, payload OllamaModelDetailsRequest) (*OllamaModelDetailsResponse, error) {
+func (c *client) ModelDetailsCall(ctx context.Context, payload ModelDetailsRequest) (*ModelDetailsResponse, error) {
 	b, err := json.Marshal(&payload)
 	if err != nil {
 		return nil, fmt.Errorf("marshalling request payload: %w", err)
@@ -353,7 +356,7 @@ func (c *client) ModelDetailsCall(ctx context.Context, payload OllamaModelDetail
 	}
 	defer func() { _ = res.Body.Close() }()
 
-	var response OllamaModelDetailsResponse
+	var response ModelDetailsResponse
 	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
 		return nil, fmt.Errorf("decoding response: %w", err)
 	}
@@ -361,6 +364,6 @@ func (c *client) ModelDetailsCall(ctx context.Context, payload OllamaModelDetail
 	return &response, nil
 }
 
-func (c *client) ModelDetails(ctx context.Context, model string) (*OllamaModelDetailsResponse, error) {
-	return c.ModelDetailsCall(ctx, OllamaModelDetailsRequest{Model: model})
+func (c *client) ModelDetails(ctx context.Context, model string) (*ModelDetailsResponse, error) {
+	return c.ModelDetailsCall(ctx, ModelDetailsRequest{Model: model})
 }

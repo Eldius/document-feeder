@@ -16,7 +16,7 @@ var rootCmd = &cobra.Command{
 	Short: "A simple news feed tool",
 	Long:  `A simple news feed tool.`,
 	PersistentPreRunE: setup.PersistentPreRunE(
-		"feed-embedder",
+		"document-feeder",
 		setup.WithConfigFileToBeUsed(cfgFile),
 		setup.WithDefaultCfgFileLocations("~", ".config", "."),
 		setup.WithEnvPrefix("FEEDER"),

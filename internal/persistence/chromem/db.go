@@ -47,7 +47,7 @@ type vectorizer struct {
 func NewDocumentVectorizer(
 	db *chromem.DB,
 	textSplitter textsplitter.TextSplitter,
-	ollamaClient ollama.OllamaClient,
+	ollamaClient ollama.Client,
 	embeddingModel string,
 	chunkSize, chunkOverlap int,
 ) (DocumentVectorizer, error) {

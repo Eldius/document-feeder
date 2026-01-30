@@ -6,7 +6,7 @@ import (
 	"github.com/eldius/document-feeder/internal/client/ollama"
 )
 
-func DisplayModels(ms *ollama.OllamaModelsResponse) {
+func DisplayModels(ms *ollama.ModelsResponse) {
 	labelStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("255")).
 		Bold(true)

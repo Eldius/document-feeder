@@ -65,6 +65,11 @@ models-ps:
 models-autoconf:
 	go run ./cmd/cli/ models autoconfigure --model=deepseek-r1:7b
 
+benchmark:
+	go run ./cmd/benchmarker \
+		--model=tinyllama:latest \
+		--model=deepseek-r1:7b
+
 validate: test linter vulncheck
 	@echo "Validation completed!"
 
