@@ -48,10 +48,11 @@ ask:
 				"Explain the difference between supervised and unsupervised learning"
 
 release:
-	goreleaser \
-		release \
-			--clean \
-			--snapshot
+	go tool \
+		goreleaser \
+			release \
+				--clean \
+				--snapshot
 
 testing:
 	go run ./cmd/cli testing

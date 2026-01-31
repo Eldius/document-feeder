@@ -42,35 +42,61 @@ func (b *Benchmark) Run(ctx context.Context, models []string) error {
 		"Liste as principais vantagens do Raspberry Pi 5.",
 	}
 
-	app := b.db.Appender(ctx)
 	for _, m := range models {
 		for _, q := range questionsList {
-			series := labels.FromStrings(q, m)
-			ref, err := app.Append(0, series, time.Now().Unix(), 0)
-			if err != nil {
-				return err
-			}
-			defer func() {
-				_ = app.Rollback()
-			}()
-
-			for range 10 {
-				result, err := generate(ctx, b.c, m, q)
-				if err != nil {
-					return fmt.Errorf("generating benchmark result: %w", err)
-				}
-				ref, err = app.Append(ref, series, time.Now().Unix(), float64(result.Duration.Milliseconds()))
-				if err != nil {
-					return fmt.Errorf("appending benchmark result: %w", err)
-				}
+			if _, err := execute(ctx, b.db, b.c, m, q); err != nil {
+				return fmt.Errorf("executing benchmark: %w", err)
 			}
 		}
 	}
+	return nil
+}
+
+func execute(ctx context.Context, db *tsdb.DB, c ollama.Client, model, question string) (*BenchmarkResult, error) {
+	app := db.Appender(ctx)
+	labelsGenerationTime := labels.FromStrings("__name__", "generation_time", "model", model, "question", question)
+	refGenerationDuration, err := app.Append(
+		0,
+		labelsGenerationTime,
+		time.Now().Unix(),
+		0,
+	)
+	if err != nil {
+		return nil, err
+	}
+	labelsTokenCount := labels.FromStrings("__name__", "context_size", "model", model, "question", question)
+	refGenerationTokenCount, err := app.Append(
+		0,
+		labelsTokenCount,
+		time.Now().Unix(),
+		0,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = app.Rollback()
+	}()
+
+	//for range 10 {
+	result, err := generate(ctx, c, model, question)
+	if err != nil {
+		return nil, fmt.Errorf("generating benchmark result: %w", err)
+	}
+	_, err = app.Append(refGenerationDuration, labelsGenerationTime, time.Now().Unix(), float64(result.Duration.Milliseconds()))
+	if err != nil {
+		return nil, fmt.Errorf("[generation time] appending benchmark result: %w", err)
+	}
+	_, err = app.Append(refGenerationTokenCount, labelsTokenCount, time.Now().Unix(), float64(result.ContextSize))
+	if err != nil {
+		return nil, fmt.Errorf("[context size] appending benchmark result: %w", err)
+	}
+	//}
 	if err := app.Commit(); err != nil {
-		return fmt.Errorf("committing benchmark results: %w", err)
+		return nil, fmt.Errorf("committing benchmark results: %w", err)
 	}
 
-	return nil
+	return nil, nil
 }
 
 func generate(ctx context.Context, c ollama.Client, model, question string) (*BenchmarkResult, error) {
@@ -89,11 +115,12 @@ func generate(ctx context.Context, c ollama.Client, model, question string) (*Be
 	}
 
 	result := BenchmarkResult{
-		Operation: GenerateOperation,
-		Duration:  time.Since(start),
-		Model:     model,
-		Question:  question,
-		Answer:    res.Response,
+		Operation:   GenerateOperation,
+		Duration:    time.Since(start),
+		Model:       model,
+		Question:    question,
+		Answer:      res.Response,
+		ContextSize: len(res.Context),
 	}
 
 	fmt.Printf("---\nModel: %s, Question: %s, Answer: %s, Time: %s\n", result.Model, result.Question, result.Answer, result.Duration)
@@ -119,9 +146,10 @@ const (
 )
 
 type BenchmarkResult struct {
-	Operation Operation
-	Duration  time.Duration
-	Model     string
-	Question  string
-	Answer    string
+	Operation   Operation
+	Duration    time.Duration
+	Model       string
+	Question    string
+	Answer      string
+	ContextSize int
 }
