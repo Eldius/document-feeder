@@ -1,0 +1,12 @@
+[project]
+name = "embeddings-model-conversion"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12.12"
+dependencies = [
+    "onnx>=1.20.1",
+    "onnxruntime>=1.23.2",
+    "sentencepiece>=0.2.1",
+    "transformers>=5.0.0",
+]
