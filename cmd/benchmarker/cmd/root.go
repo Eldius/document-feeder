@@ -45,7 +45,7 @@ to quickly create a Cobra application.`,
 			return err
 		}
 
-		if err := c.Run(cmd.Context(), models); err != nil {
+		if err := c.Run(cmd.Context(), rootOpts.models); err != nil {
 			return err
 		}
 
@@ -54,8 +54,10 @@ to quickly create a Cobra application.`,
 }
 
 var (
-	cfgFile string
-	models  []string
+	cfgFile  string
+	rootOpts struct {
+		models []string
+	}
 )
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -69,5 +71,5 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./config.yaml)")
-	rootCmd.PersistentFlags().StringSliceVar(&models, "model", []string{"deepseek-r1:1.5b", "llama3:8b-instruct-q4_K_M", "tinyllama:latest"}, "ollama model to use")
+	rootCmd.PersistentFlags().StringSliceVar(&rootOpts.models, "model", []string{"deepseek-r1:1.5b", "llama3:8b-instruct-q4_K_M", "tinyllama:latest"}, "ollama model to use")
 }

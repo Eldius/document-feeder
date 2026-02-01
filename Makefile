@@ -88,6 +88,11 @@ benchmark:
 		--model=tinyllama:latest \
 		--model=deepseek-r1:7b
 
+benchmark-show:
+	go run ./cmd/benchmarker show \
+		--model=tinyllama:latest \
+		--model=deepseek-r1:7b
+
 validate: test linter vulncheck
 	@echo "Validation completed!"
 

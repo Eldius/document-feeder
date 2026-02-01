@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
 	"log/slog"
+	"math/rand/v2"
 	"os"
 	"time"
 
@@ -16,14 +17,16 @@ import (
 
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
-	"gonum.org/v1/plot/plotutil"
 	"gonum.org/v1/plot/vg"
+
+	"image/color"
 )
 
 const (
-	durationMetricName    = "duration_ms"
-	contextSizeMetricName = "context_size"
-	metricName            = "__name__"
+	durationMetricNameLabel    = "duration_ms"
+	contextSizeMetricNameLabel = "context_size"
+	metricNameLabel            = "__name__"
+	metricModelLabel           = "model"
 )
 
 type Benchmark struct {
@@ -84,13 +87,13 @@ func (b *Benchmark) Run(ctx context.Context, models []string) error {
 		}
 	}
 
-	return b.Plot(ctx)
+	return b.Plot(ctx, models)
 }
 
 func execute(ctx context.Context, db *tsdb.DB, c ollama.Client, model, question string, w *csv.Writer) (*BenchmarkResult, error) {
 	app := db.Appender(ctx)
-	labelsGenerationTime := labels.FromStrings(metricName, durationMetricName, "model", model, "question", question)
-	labelsTokenCount := labels.FromStrings(metricName, contextSizeMetricName, "model", model, "question", question)
+	labelsGenerationTime := labels.FromStrings(metricNameLabel, durationMetricNameLabel, "model", model, "question", question)
+	labelsTokenCount := labels.FromStrings(metricNameLabel, contextSizeMetricNameLabel, "model", model, "question", question)
 	refGenerationDuration, err := app.Append(
 		0,
 		labelsGenerationTime,
@@ -158,8 +161,8 @@ func generate(ctx context.Context, c ollama.Client, model, question string) (*Be
 
 	result := BenchmarkResult{
 		Labels: MetricsLabels{
-			Duration:   labels.FromStrings(metricName, durationMetricName, "model", model, "question", question),
-			TokenCount: labels.FromStrings(metricName, contextSizeMetricName, "model", model, "question", question),
+			Duration:   labels.FromStrings(metricNameLabel, durationMetricNameLabel, "model", model, "question", question),
+			TokenCount: labels.FromStrings(metricNameLabel, contextSizeMetricNameLabel, "model", model, "question", question),
 		},
 		Operation:   GenerateOperation,
 		Duration:    time.Since(start),
@@ -174,8 +177,7 @@ func generate(ctx context.Context, c ollama.Client, model, question string) (*Be
 	return &result, nil
 }
 
-func (b *Benchmark) Plot(ctx context.Context) error {
-	// Criar querier
+func (b *Benchmark) Plot(ctx context.Context, models []string) error {
 	now := time.Now()
 	q, err := b.db.Querier(now.Add(-24*time.Hour).Unix(), now.Unix())
 	if err != nil {
@@ -183,15 +185,19 @@ func (b *Benchmark) Plot(ctx context.Context) error {
 	}
 	defer func() { _ = q.Close() }()
 
-	getSeries := func(metricName string) plotter.XYs {
-		seriesSet := q.Select(ctx, true, nil, labels.MustNewMatcher(labels.MatchEqual, "__name__", metricName))
+	getSeries := func(metricName, model string) plotter.XYs {
+		seriesSet := q.Select(
+			ctx,
+			true,
+			nil,
+			labels.MustNewMatcher(labels.MatchEqual, metricNameLabel, metricName),
+			labels.MustNewMatcher(labels.MatchRegexp, metricModelLabel, model),
+		)
 		points := plotter.XYs{}
 		for seriesSet.Next() {
 			it := seriesSet.At().Iterator(nil)
-			fmt.Printf("Métrica: %s\n", seriesSet.At().Labels())
 			for it.Next() == chunkenc.ValFloat {
 				t, v := it.At()
-				// Converter timestamp para segundos relativos
 				points = append(points, plotter.XY{
 					X: float64(t) / 1000.0,
 					Y: v,
@@ -201,31 +207,56 @@ func (b *Benchmark) Plot(ctx context.Context) error {
 		return points
 	}
 
-	// Buscar métricas
-	duration := getSeries(durationMetricName)
-	tokens := getSeries(contextSizeMetricName)
+	duration := make(map[string]plotter.XYs)
+	tokens := make(map[string]plotter.XYs)
+	for _, m := range models {
+		duration[m] = getSeries(durationMetricNameLabel, m)
+		tokens[m] = getSeries(contextSizeMetricNameLabel, m)
+	}
 
-	// Criar gráfico
 	p := plot.New()
 	p.Title.Text = "Métricas do sistema"
 	p.X.Label.Text = "Tempo (s)"
 	p.Y.Label.Text = "Valor"
 
-	// Adicionar linhas
-	err = plotutil.AddLines(p,
-		"Duração (ms)", duration,
-		"Tokens", tokens,
-	)
-	if err != nil {
-		return fmt.Errorf("adding lines to plot: %w", err)
-	}
+	for m, _ := range duration {
+		durationVals := duration[m]
+		tokensVals := tokens[m]
+		durLine, err := plotter.NewLine(durationVals)
+		if err != nil {
+			return fmt.Errorf("creating duration line: %w", err)
+		}
+		durLine.LineStyle.Color = randonColor()
+		durLine.LineStyle.Width = vg.Points(1)
 
-	// Salvar em PNG
+		p.Add(durLine)
+		p.Legend.Add(fmt.Sprintf("%s - duration (ms)", m), durLine)
+
+		tokensLine, err := plotter.NewLine(tokensVals)
+		if err != nil {
+			return fmt.Errorf("creating duration line: %w", err)
+		}
+		tokensLine.LineStyle.Color = randonColor()
+		tokensLine.LineStyle.Width = vg.Points(1)
+		p.Add(tokensLine)
+		p.Legend.Add(fmt.Sprintf("%s - tokens", m), tokensLine)
+
+		p.Legend.Top = true
+	}
 	if err := p.Save(8*vg.Inch, 4*vg.Inch, "metrics.png"); err != nil {
 		return fmt.Errorf("saving plot: %w", err)
 	}
 
 	return nil
+}
+
+func randonColor() color.RGBA {
+	return color.RGBA{
+		R: uint8(rand.IntN(255)),
+		G: uint8(rand.IntN(255)),
+		B: uint8(rand.IntN(255)),
+		A: uint8(rand.IntN(255)),
+	}
 }
 
 type Operation int
