@@ -178,6 +178,7 @@ func generate(ctx context.Context, c ollama.Client, model, question string) (*Be
 }
 
 func (b *Benchmark) Plot(ctx context.Context, models []string) error {
+	_ = os.MkdirAll("data", 0755)
 	now := time.Now()
 	q, err := b.db.Querier(now.Add(-24*time.Hour).Unix(), now.Unix())
 	if err != nil {
@@ -219,15 +220,15 @@ func (b *Benchmark) Plot(ctx context.Context, models []string) error {
 	p.X.Label.Text = "Tempo (s)"
 	p.Y.Label.Text = "Valor"
 
-	for m, _ := range duration {
+	for m := range duration {
 		durationVals := duration[m]
 		tokensVals := tokens[m]
 		durLine, err := plotter.NewLine(durationVals)
 		if err != nil {
 			return fmt.Errorf("creating duration line: %w", err)
 		}
-		durLine.LineStyle.Color = randonColor()
-		durLine.LineStyle.Width = vg.Points(1)
+		durLine.Color = randonColor()
+		durLine.Width = vg.Points(1)
 
 		p.Add(durLine)
 		p.Legend.Add(fmt.Sprintf("%s - duration (ms)", m), durLine)
@@ -236,14 +237,14 @@ func (b *Benchmark) Plot(ctx context.Context, models []string) error {
 		if err != nil {
 			return fmt.Errorf("creating duration line: %w", err)
 		}
-		tokensLine.LineStyle.Color = randonColor()
-		tokensLine.LineStyle.Width = vg.Points(1)
+		tokensLine.Color = randonColor()
+		tokensLine.Width = vg.Points(1)
 		p.Add(tokensLine)
 		p.Legend.Add(fmt.Sprintf("%s - tokens", m), tokensLine)
 
 		p.Legend.Top = true
 	}
-	if err := p.Save(8*vg.Inch, 4*vg.Inch, "metrics.png"); err != nil {
+	if err := p.Save(8*vg.Inch, 4*vg.Inch, "data/metrics.png"); err != nil {
 		return fmt.Errorf("saving plot: %w", err)
 	}
 
