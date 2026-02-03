@@ -30,7 +30,7 @@ Example: feed add https://www.heise.de/news/rss/heise-newsfeed.xml.
 		errorStyle := lipgloss.NewStyle().
 			Bold(true).
 			Foreground(lipgloss.Color("232")). // Dark text color for contrast
-			Background(lipgloss.Color("1")).   // Red background
+			Background(lipgloss.Color("1")). // Red background
 			PaddingLeft(1).
 			PaddingRight(1).
 			MarginRight(1)
@@ -56,6 +56,7 @@ Example: feed add https://www.heise.de/news/rss/heise-newsfeed.xml.
 		for _, msg := range feedbackMessage {
 			fmt.Print(msg)
 		}
+		return nil
 	},
 }
 

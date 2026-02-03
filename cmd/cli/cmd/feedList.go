@@ -21,7 +21,7 @@ to quickly create a Cobra application.`,
 		a, err := adapter.NewDefaultAdapter()
 		if err != nil {
 			err := fmt.Errorf("creating adapter: %w", err)
-			fmt.Printf("failed to create adapter: %w", err)
+			fmt.Printf("failed to create adapter: %s", err)
 			return err
 		}
 		feeds, err := a.All(cmd.Context())

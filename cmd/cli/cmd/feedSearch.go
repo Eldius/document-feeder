@@ -29,14 +29,14 @@ to quickly create a Cobra application.`,
 		a, err := adapter.NewDefaultAdapter()
 		if err != nil {
 			err := fmt.Errorf("creating adapter: %w", err)
-			fmt.Printf("failed to create adapter: %w", err)
+			fmt.Printf("failed to create adapter: %s\n", err)
 			return err
 		}
 		fmt.Println("searching feeds")
 		res, err := a.Search(cmd.Context(), strings.Join(args, " "), feedSearchOpts.maxResults)
 		if err != nil {
 			err := fmt.Errorf("searching feeds: %w", err)
-			fmt.Printf("failed to search feeds: %w", err)
+			fmt.Printf("failed to search feeds: %s\n", err)
 			return err
 		}
 
@@ -47,7 +47,7 @@ to quickly create a Cobra application.`,
 
 		if err := ui.ArticleReaderScreen(cmd.Context(), articles); err != nil {
 			err := fmt.Errorf("reading articles: %w", err)
-			fmt.Printf("failed to read articles: %w", err)
+			fmt.Printf("failed to read articles: %s\n", err)
 			return err
 		}
 		return nil

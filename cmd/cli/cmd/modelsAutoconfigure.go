@@ -19,7 +19,7 @@ var modelsAutoconfigureCmd = &cobra.Command{
 		res, err := c.ModelDetails(cmd.Context(), modelsAutoconfigureOpts.model)
 		if err != nil {
 			err := fmt.Errorf("fetching model details: %w", err)
-			fmt.Printf("failed to fetch model details: %w\n", err)
+			fmt.Printf("failed to fetch model details: %s\n", err)
 			return err
 		}
 
@@ -30,14 +30,14 @@ var modelsAutoconfigureCmd = &cobra.Command{
 		chunkOverlap := chunkSize / 10
 
 		fmt.Printf("---\nmodel set to %s\n", modelsAutoconfigureOpts.model)
-		fmt.Printf("chunk size: %d\nchunck overlap: %d\n\n", chunkSize, chunkOverlap)
+		fmt.Printf("chunk size: %d\nchunk overlap: %d\n\n", chunkSize, chunkOverlap)
 
 		config.SetOllamaEmbeddingModel(modelsAutoconfigureOpts.model)
 		config.SetOllamaEmbeddingChunkSize(chunkSize)
 		config.SetOllamaEmbeddingChunkOverlap(chunkOverlap)
 		if err := config.PersistConfig(); err != nil {
 			err := fmt.Errorf("persisting config: %w", err)
-			fmt.Printf("failed to persist config: %w\n", err)
+			fmt.Printf("failed to persist config: %s\n", err)
 			return err
 		}
 		return nil

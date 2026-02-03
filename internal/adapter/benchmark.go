@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
-	"github.com/prometheus/prometheus/tsdb/chunkenc"
 	"log/slog"
 	"math/rand/v2"
 	"os"
 	"time"
+
+	"github.com/prometheus/prometheus/tsdb/chunkenc"
 
 	"github.com/eldius/document-feeder/internal/client/ollama"
 	"github.com/eldius/document-feeder/internal/ui"
@@ -45,9 +46,6 @@ func NewBenchmark(c ollama.Client, db *tsdb.DB, iterCount int) *Benchmark {
 }
 
 func NewBenchmarkFromConfig() (*Benchmark, error) {
-	// Create a random dir to work in.  Open() doesn't require a pre-existing dir, but
-	// we want to make sure not to make a mess where we shouldn't.
-	// Open a TSDB for reading and/or writing.
 	db, err := NewTSDB("data/tsdb.db")
 	if err != nil {
 		return nil, fmt.Errorf("opening TSDB: %w", err)
@@ -123,12 +121,12 @@ func execute(ctx context.Context, db *tsdb.DB, c ollama.Client, model, question 
 
 	//for range iterCount {
 	result, err := generate(ctx, c, model, question)
-	result.Labels.Duration = labelsGenerationTime
-	result.Labels.TokenCount = labelsTokenCount
-
 	if err != nil {
 		return nil, fmt.Errorf("generating benchmark result: %w", err)
 	}
+	result.Labels.Duration = labelsGenerationTime
+	result.Labels.TokenCount = labelsTokenCount
+
 	_, err = app.Append(refGenerationDuration, result.Labels.Duration, time.Now().Unix(), float64(result.Duration.Milliseconds()))
 	if err != nil {
 		return nil, fmt.Errorf("[generation time] appending benchmark result: %w", err)

@@ -22,13 +22,13 @@ to quickly create a Cobra application.`,
 		a, err := adapter.NewDefaultAdapter()
 		if err != nil {
 			err := fmt.Errorf("creating adapter: %w", err)
-			fmt.Printf("failed to create adapter: %w", err)
+			fmt.Printf("failed to create adapter: %s\n", err)
 			return err
 		}
 		fmt.Println("refreshing feeds")
 		if err := a.Refresh(cmd.Context()); err != nil {
 			err := fmt.Errorf("refreshing feeds: %w", err)
-			fmt.Printf("failed to refresh feeds: %w", err)
+			fmt.Printf("failed to refresh feeds: %s\n", err)
 			return err
 		}
 		return nil

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/eldius/document-feeder/internal/client/ollama"
 	"github.com/eldius/document-feeder/internal/ui"
 
@@ -20,7 +21,7 @@ var modelLsCmd = &cobra.Command{
 		models, err := c.ListModels(cmd.Context())
 		if err != nil {
 			err := fmt.Errorf("listing models: %w", err)
-			fmt.Printf("failed to list models: %w\n", err)
+			fmt.Printf("failed to list models: %s\n", err)
 			return err
 		}
 		ui.DisplayModels(models)
