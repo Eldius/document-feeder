@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"os"
+	"time"
 
 	"github.com/eldius/document-feeder/internal/config"
 	"github.com/eldius/initial-config-go/configs"
@@ -32,6 +33,7 @@ var rootCmd = &cobra.Command{
 			config.OllamaGenerationNoCacheProp,
 		),
 	),
+	PersistentPostRunE: setup.PersistentPostRunE(1 * time.Second),
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

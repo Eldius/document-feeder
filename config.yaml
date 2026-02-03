@@ -1,28 +1,36 @@
 ---
 log:
-  level: debug
-  format: json
+    level: debug
+    format: json
 ollama:
-  endpoint: http://192.168.0.185:11434
-  # Default configuration for nomic-embed-text (context length: 2048)
-  embedding:
-    model: nomic-embed-text
-    chunk_size: 1024
-    chunk_overlap: 150
-  # Default configuration for mxbai-embed-large (context length: 512)
-  #  embedding:
-  #    model: mxbai-embed-large
-  #    model: deepseek-r1:7b
-  #    chunk_size: 256
-  #    chunk_overlap: 30
-  #  embedding:
-  #    model: deepseek-r1:7b
-  #    chunk_size: 65536
-  #    chunk_overlap: 9830
-  generation:
-#    model: llama3:8b-instruct-q4_K_M
-#    model: deepseek-r1:1.5b
-#    model: deepseek-r1:7b
-    model: tinyllama:latest
-    cache_similarity_threshold: 0.8
-    cache_enabled: true
+    endpoint: http://192.168.0.185:11434
+    # Default configuration for nomic-embed-text (context length: 2048)
+    embedding:
+      model: nomic-embed-text
+      chunk_size: 1024
+      chunk_overlap: 150
+    # Default configuration for mxbai-embed-large (context length: 512)
+    # embedding:
+    #   model: mxbai-embed-large
+    #   model: deepseek-r1:7b
+    #   chunk_size: 256
+    #   chunk_overlap: 30
+    # embedding:
+    #   model: deepseek-r1:7b
+    #   chunk_size: 65536
+    #   chunk_overlap: 9830
+    # embedding:
+    #   model: pedrovillalobos/mxbai-embed-large-no-gpu
+    #   chunk_overlap: 25
+    #   chunk_size: 256
+    # embedding:
+    #   model: qllama/bge-m3:q4_k_m
+    #   chunk_size: 4096
+    #   chunk_overlap: 409
+    generation:
+        #    model: llama3:8b-instruct-q4_K_M
+        #    model: deepseek-r1:1.5b
+        #    model: deepseek-r1:7b
+        model: tinyllama:latest
+        cache_similarity_threshold: 0.8
+        cache_enabled: true

@@ -25,15 +25,19 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		a, err := adapter.NewDefaultAdapter()
 		if err != nil {
-			panic(err)
+			err := fmt.Errorf("creating adapter: %w", err)
+			fmt.Printf("failed to create adapter: %w", err)
+			return err
 		}
 		fmt.Println("searching feeds")
 		res, err := a.Search(cmd.Context(), strings.Join(args, " "), feedSearchOpts.maxResults)
 		if err != nil {
-			panic(err)
+			err := fmt.Errorf("searching feeds: %w", err)
+			fmt.Printf("failed to search feeds: %w", err)
+			return err
 		}
 
 		var articles []model.Article
@@ -42,8 +46,11 @@ to quickly create a Cobra application.`,
 		}
 
 		if err := ui.ArticleReaderScreen(cmd.Context(), articles); err != nil {
-			panic(err)
+			err := fmt.Errorf("reading articles: %w", err)
+			fmt.Printf("failed to read articles: %w", err)
+			return err
 		}
+		return nil
 	},
 }
 

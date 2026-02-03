@@ -19,18 +19,22 @@ var askCmd = &cobra.Command{
 	Use:   "ask",
 	Short: "Ask a question to the model using the stored content",
 	Long:  `Ask a question to the model using the stored content.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		cancel := ui.ProcessingScreen(cmd.Context(), "Processing questionOut...")
 		defer cancel()
 		start := time.Now()
 		a, err := adapter.NewDefaultAdapter()
 		if err != nil {
-			panic(err)
+			err = fmt.Errorf("creating adapter: %v", err)
+			fmt.Printf("Failed to create adapter: %v\n", err)
+			return err
 		}
 		questionIn := strings.Join(args, " ")
 		answer, err := a.AskAQuestion(cmd.Context(), questionIn)
 		if err != nil {
-			panic(err)
+			err = fmt.Errorf("asking question: %v", err)
+			fmt.Printf("Failed to ask question: %v\n", err)
+			return err
 		}
 
 		cancel()
@@ -66,8 +70,9 @@ var askCmd = &cobra.Command{
 			fmt.Println("Outputting to file:", askOpts.outputFile)
 			err := os.WriteFile(askOpts.outputFile, []byte(questionOut+"\n"+answerOut), 0644)
 			if err != nil {
-				fmt.Println("Error writing to file:", err)
-				return
+				err = fmt.Errorf("writing to file: %v", err)
+				fmt.Printf("Failed to write to file: %v\n", err)
+				return err
 			}
 		}
 
@@ -77,6 +82,8 @@ var askCmd = &cobra.Command{
 		fmt.Println("---")
 		fmt.Println("---")
 		fmt.Println(footerStyle.Render(fmt.Sprintf("Time elapsed: %s", time.Since(start).String())))
+
+		return nil
 	},
 }
 

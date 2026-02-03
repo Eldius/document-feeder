@@ -45,7 +45,7 @@ to quickly create a Cobra application.`,
 			return err
 		}
 
-		if err := c.Run(cmd.Context(), rootOpts.models); err != nil {
+		if err := c.Generate(cmd.Context(), rootOpts.models); err != nil {
 			return err
 		}
 

@@ -19,16 +19,18 @@ var feedAddCmd = &cobra.Command{
 Feeds are added using their URL.
 Example: feed add https://www.heise.de/news/rss/heise-newsfeed.xml.
 `,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		a, err := adapter.NewDefaultAdapter()
 		if err != nil {
-			panic(err)
+			err = fmt.Errorf("creating adapter: %v", err)
+			fmt.Printf("Failed to create adapter: %v\n", err)
+			return err
 		}
 
 		errorStyle := lipgloss.NewStyle().
 			Bold(true).
 			Foreground(lipgloss.Color("232")). // Dark text color for contrast
-			Background(lipgloss.Color("1")). // Red background
+			Background(lipgloss.Color("1")).   // Red background
 			PaddingLeft(1).
 			PaddingRight(1).
 			MarginRight(1)
@@ -63,6 +65,7 @@ func processFeed(ctx context.Context, a *adapter.FeedAdapter, feedURL string) *m
 
 	feed, err := a.Parse(ctx, feedURL)
 	if err != nil {
+		fmt.Printf("Failed to parse feed: %v\n", fmt.Errorf("parsing feed: %v", err))
 		return nil
 	}
 	return feed

@@ -13,13 +13,14 @@ var modelsAutoconfigureCmd = &cobra.Command{
 	Use:   "autoconfigure",
 	Short: "Fetch model definitions and set configuration patterns for this model",
 	Long:  `Fetch model definitions and set configuration patterns for this model.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		c := ollama.NewOllamaClient()
 
 		res, err := c.ModelDetails(cmd.Context(), modelsAutoconfigureOpts.model)
 		if err != nil {
-			cmd.PrintErrf("Failed to fetch model details: %v", err)
-			return
+			err := fmt.Errorf("fetching model details: %w", err)
+			fmt.Printf("failed to fetch model details: %w\n", err)
+			return err
 		}
 
 		contextLength := res.ContextLength()
@@ -35,9 +36,11 @@ var modelsAutoconfigureCmd = &cobra.Command{
 		config.SetOllamaEmbeddingChunkSize(chunkSize)
 		config.SetOllamaEmbeddingChunkOverlap(chunkOverlap)
 		if err := config.PersistConfig(); err != nil {
-			cmd.PrintErrf("Failed to persist configuration: %v", err)
-			return
+			err := fmt.Errorf("persisting config: %w", err)
+			fmt.Printf("failed to persist config: %w\n", err)
+			return err
 		}
+		return nil
 	},
 }
 

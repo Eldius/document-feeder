@@ -18,15 +18,20 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		a, err := adapter.NewDefaultAdapter()
 		if err != nil {
-			panic(err)
+			err := fmt.Errorf("creating adapter: %w", err)
+			fmt.Printf("failed to create adapter: %w", err)
+			return err
 		}
 		fmt.Println("refreshing feeds")
 		if err := a.Refresh(cmd.Context()); err != nil {
-			panic(err)
+			err := fmt.Errorf("refreshing feeds: %w", err)
+			fmt.Printf("failed to refresh feeds: %w", err)
+			return err
 		}
+		return nil
 	},
 }
 

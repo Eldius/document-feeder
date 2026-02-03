@@ -12,11 +12,13 @@ var modelsCmd = &cobra.Command{
 	Use:   "models",
 	Short: "List available models.",
 	Long:  `List all available models.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		c := ollama.NewOllamaClient()
 		models, err := c.ListModels(cmd.Context())
 		if err != nil {
-			panic(err)
+			err := fmt.Errorf("listing models: %w", err)
+			fmt.Printf("failed to list models: %w\n", err)
+			return err
 		}
 		for _, m := range models.Models {
 			fmt.Println("")
@@ -30,6 +32,7 @@ var modelsCmd = &cobra.Command{
 				fmt.Println("        -", f)
 			}
 		}
+		return nil
 	},
 }
 

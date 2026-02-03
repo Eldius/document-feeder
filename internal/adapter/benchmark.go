@@ -56,7 +56,7 @@ func NewBenchmarkFromConfig() (*Benchmark, error) {
 	return NewBenchmark(ollama.NewOllamaClient(), db, 3), nil
 }
 
-func (b *Benchmark) Run(ctx context.Context, models []string) error {
+func (b *Benchmark) Generate(ctx context.Context, models []string) error {
 	questionsList := []string{
 		"Explique a diferença entre aprendizado supervisionado e não supervisionado.",
 		"Liste as principais vantagens do Raspberry Pi 5.",
@@ -88,6 +88,11 @@ func (b *Benchmark) Run(ctx context.Context, models []string) error {
 	}
 
 	return b.Plot(ctx, models)
+}
+
+func (b *Benchmark) Embeddings(ctx context.Context, models []string) error {
+	
+	return fmt.Errorf("not implemented")
 }
 
 func execute(ctx context.Context, db *tsdb.DB, c ollama.Client, model, question string, w *csv.Writer) (*BenchmarkResult, error) {

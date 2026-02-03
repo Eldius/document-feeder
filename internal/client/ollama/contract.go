@@ -110,8 +110,6 @@ type GenerateRequest struct {
 	Options   OptionsRequest `json:"options"`
 }
 
-type GenerationOption func(*OptionsRequest)
-
 type ModelsResponse struct {
 	Models []Model `json:"models"`
 }
@@ -166,4 +164,132 @@ type Tensors struct {
 
 func (r ModelDetailsResponse) ContextLength() int {
 	return int(r.ModelInfo[r.Details.Family+".context_length"].(float64))
+}
+
+type GenerationOption func(*OptionsRequest)
+
+func WithNumKeep(numKeep int) GenerationOption {
+	return func(opts *OptionsRequest) {
+		opts.NumKeep = numKeep
+	}
+}
+
+func WithSeed(seed int) GenerationOption {
+	return func(opts *OptionsRequest) {
+		opts.Seed = seed
+	}
+}
+
+func WithNumPredict(numPredict int) GenerationOption {
+	return func(opts *OptionsRequest) {
+		opts.NumPredict = numPredict
+	}
+}
+
+func WithTopK(topK int) GenerationOption {
+	return func(opts *OptionsRequest) {
+		opts.TopK = topK
+	}
+}
+
+func WithTopP(topP float64) GenerationOption {
+	return func(opts *OptionsRequest) {
+		opts.TopP = topP
+	}
+}
+
+func WithMinP(minP float64) GenerationOption {
+	return func(opts *OptionsRequest) {
+		opts.MinP = minP
+	}
+}
+
+func WithTypicalP(typicalP float64) GenerationOption {
+	return func(opts *OptionsRequest) {
+		opts.TypicalP = typicalP
+	}
+}
+
+func WithRepeatLastN(repeatLastN int) GenerationOption {
+	return func(opts *OptionsRequest) {
+		opts.RepeatLastN = repeatLastN
+	}
+}
+
+func WithTemperature(temperature float64) GenerationOption {
+	return func(opts *OptionsRequest) {
+		opts.Temperature = temperature
+	}
+}
+
+func WithRepeatPenalty(repeatPenalty float64) GenerationOption {
+	return func(opts *OptionsRequest) {
+		opts.RepeatPenalty = repeatPenalty
+	}
+}
+
+func WithPresencePenalty(presencePenalty float64) GenerationOption {
+	return func(opts *OptionsRequest) {
+		opts.PresencePenalty = presencePenalty
+	}
+}
+
+func WithFrequencyPenalty(frequencyPenalty float64) GenerationOption {
+	return func(opts *OptionsRequest) {
+		opts.FrequencyPenalty = frequencyPenalty
+	}
+}
+
+func WithPenalizeNewline(penalizeNewline bool) GenerationOption {
+	return func(opts *OptionsRequest) {
+		opts.PenalizeNewline = penalizeNewline
+	}
+}
+
+func WithStop(stop []string) GenerationOption {
+	return func(opts *OptionsRequest) {
+		opts.Stop = stop
+	}
+}
+
+func WithNuma(numa bool) GenerationOption {
+	return func(opts *OptionsRequest) {
+		opts.Numa = numa
+	}
+}
+
+func WithNumCtx(numCtx int) GenerationOption {
+	return func(opts *OptionsRequest) {
+		opts.NumCtx = numCtx
+	}
+}
+
+func WithNumBatch(numBatch int) GenerationOption {
+	return func(opts *OptionsRequest) {
+		opts.NumBatch = numBatch
+	}
+}
+
+func WithNumGpu(numGpu int) GenerationOption {
+	return func(opts *OptionsRequest) {
+		opts.NumGpu = numGpu
+	}
+}
+
+func WithMainGpu(mainGpu int) GenerationOption {
+	return func(opts *OptionsRequest) {
+		opts.MainGpu = mainGpu
+	}
+}
+
+func WithUseMmap(useMmap bool) GenerationOption {
+	return func(opts *OptionsRequest) {
+		opts.UseMmap = useMmap
+	}
+}
+
+func WithNumThread(numThread int) GenerationOption {
+	return func(opts *OptionsRequest) {
+		opts.NumThread = numThread
+	}
 }

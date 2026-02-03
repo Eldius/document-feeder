@@ -75,14 +75,16 @@ func NewDocumentVectorizer(
 }
 
 func NewDefaultDocumentVectorizer() (DocumentVectorizer, error) {
-	db, err := chromem.NewPersistentDB("data/doc.db", true)
+	embeddingModel := config.GetOllamaEmbeddingModel()
+
+	db, err := chromem.NewPersistentDB(fmt.Sprintf("data/doc_%s.db", embeddingModel), true)
 	if err != nil {
 		return nil, fmt.Errorf("opening db: %w", err)
 	}
 
 	textsplitter.NewTokenSplitter(
 		textsplitter.WithChunkSize(config.GetOllamaEmbeddingChunkSize()),
-		textsplitter.WithModelName(config.GetOllamaEmbeddingModel()),
+		textsplitter.WithModelName(embeddingModel),
 		textsplitter.WithChunkOverlap(config.GetOllamaEmbeddingChunkOverlap()),
 	)
 
@@ -91,7 +93,7 @@ func NewDefaultDocumentVectorizer() (DocumentVectorizer, error) {
 		db,
 		textsplitter.NewRecursiveCharacter(),
 		ollamaClient,
-		config.GetOllamaEmbeddingModel(),
+		embeddingModel,
 		config.GetOllamaEmbeddingChunkSize(),
 		config.GetOllamaEmbeddingChunkOverlap(),
 	)

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/eldius/document-feeder/internal/client/ollama"
 	"github.com/eldius/document-feeder/internal/ui"
 
@@ -12,15 +13,19 @@ var modelPsCmd = &cobra.Command{
 	Use:   "ps",
 	Short: "List running models.",
 	Long:  `List running models.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 
 		c := ollama.NewOllamaClient()
 		models, err := c.RunningModels(cmd.Context())
 		if err != nil {
-			panic(err)
+			err := fmt.Errorf("listing models: %w", err)
+			fmt.Printf("failed to list models: %w\n", err)
+			return err
 		}
 
 		ui.DisplayModels(models)
+
+		return nil
 	},
 }
 

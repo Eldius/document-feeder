@@ -81,7 +81,10 @@ models-ps:
 	go run ./cmd/cli/ models ps
 
 models-autoconf:
-	go run ./cmd/cli/ models autoconfigure --model=deepseek-r1:7b
+	go run ./cmd/cli/ \
+		models \
+		autoconfigure \
+			--model=all-minilm
 
 benchmark:
 	go run ./cmd/benchmarker \

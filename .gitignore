@@ -2,7 +2,7 @@
 .idea/
 *.log
 
-/data.bkp/
+*.bkp/
 /data/
 
 /dist/
