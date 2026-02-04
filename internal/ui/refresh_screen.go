@@ -137,7 +137,7 @@ func (m *refreshScreenModel) View() string {
 	}
 
 	feed := m.feeds[m.idx]
-	m.viewport.SetContent(m.content + fmt.Sprintf("Processing feed %s", feed.Title))
+	m.viewport.SetContent(m.content + fmt.Sprintf(" ⏳ Processing feed %s", feed.Title))
 
 	return m.viewport.View() + "\n\n" +
 		pad + m.progress.View() + "\n\n" +
@@ -156,7 +156,7 @@ func RefreshScreen(ctx context.Context, a *adapter.FeedAdapter) error {
 	if err != nil {
 		return fmt.Errorf("error getting feeds: %w", err)
 	}
-	vp := viewport.New(width-padding*2-4, height-5)
+	vp := viewport.New(width-padding*2-4, height-4)
 	vp.Style = vpStyle
 
 	ctx, cancel := context.WithCancel(ctx)
