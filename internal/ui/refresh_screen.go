@@ -46,6 +46,7 @@ type refreshScreenModel struct {
 	viewport  viewport.Model
 	progress  progress.Model
 	ctx       context.Context
+	cancel    context.CancelFunc
 	feeds     []*model.Feed
 	content   string
 	idx       int
@@ -68,6 +69,7 @@ func (m *refreshScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c":
+			m.cancel()
 			return m, tea.Quit
 
 		default:
@@ -104,7 +106,7 @@ func (m *refreshScreenModel) process() tea.Cmd {
 		if err != nil {
 			m.content += refreshErrorStyle.Render("✗ %s", feed.Title) + "\n"
 		} else {
-			m.content += refreshSuccessStyle.Render(fmt.Sprintf("✓ %s", feed.Title)) + "\n"
+			m.content += refreshSuccessStyle.Render(fmt.Sprintf("✓ %s (%d articles)", feed.Title, len(feed.Items))) + "\n"
 		}
 		m.idx++
 		if m.idx == m.feedCount {
@@ -119,7 +121,7 @@ func (m *refreshScreenModel) View() string {
 	pad := strings.Repeat(" ", padding)
 	return m.viewport.View() + "\n" + fmt.Sprintf("Processing feed %s", m.feeds[m.idx].Title) + "\n\n" +
 		pad + m.progress.View() + "\n\n" +
-		pad + helpStyle("Press any key to quit")
+		pad + helpStyle("Press q / ctrl+c to quit")
 }
 
 type refreshNextFeed struct{}
@@ -131,9 +133,11 @@ func RefreshScreen(ctx context.Context, a *adapter.FeedAdapter) error {
 	}
 	vp := viewport.New(20, 10)
 
+	ctx, cancel := context.WithCancel(ctx)
 	m := &refreshScreenModel{
 		progress:  progress.New(progress.WithDefaultGradient()),
 		ctx:       ctx,
+		cancel:    cancel,
 		feeds:     feeds,
 		feedCount: len(feeds),
 		idx:       0,
