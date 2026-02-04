@@ -9,6 +9,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/eldius/document-feeder/internal/adapter"
 	"github.com/eldius/document-feeder/internal/model"
+	"golang.org/x/term"
+	"os"
 	"strings"
 )
 
@@ -80,9 +82,10 @@ func (m *refreshScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.WindowSizeMsg:
 		m.progress.Width = msg.Width - padding*2 - 4
-		if m.progress.Width > maxWidth {
-			m.progress.Width = maxWidth
-		}
+		//if m.progress.Width > maxWidth {
+		//	m.progress.Width = maxWidth
+		//}
+		m.viewport.Width = msg.Width - padding*2 - 4
 		return m, nil
 
 	// FrameMsg is sent when the progress bar wants to animate itself
@@ -127,15 +130,20 @@ func (m *refreshScreenModel) View() string {
 type refreshNextFeed struct{}
 
 func RefreshScreen(ctx context.Context, a *adapter.FeedAdapter) error {
+	width, height, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		return fmt.Errorf("getting terminal size: %w", err)
+	}
+	fmt.Printf("Initial terminal size: %dx%d\n", width, height)
 	feeds, err := a.All(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting feeds: %w", err)
 	}
-	vp := viewport.New(20, 10)
+	vp := viewport.New(width-padding*2-4, height-5)
 
 	ctx, cancel := context.WithCancel(ctx)
 	m := &refreshScreenModel{
-		progress:  progress.New(progress.WithDefaultGradient()),
+		progress:  progress.New(progress.WithDefaultGradient(), progress.WithWidth(width-padding*2-4)),
 		ctx:       ctx,
 		cancel:    cancel,
 		feeds:     feeds,
