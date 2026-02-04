@@ -34,7 +34,23 @@ add:
 				--feed "https://trinhhieu668.wordpress.com/feed/" \
 				--feed "https://dev.to/feed/with_code_example" \
 				--feed "https://golangbot.com/index.xml" \
-				--feed "https://cprss.s3.amazonaws.com/golangweekly.com.xml"
+				--feed "https://cprss.s3.amazonaws.com/golangweekly.com.xml" \
+				--feed "https://codingplainenglish.medium.com/feed" \
+				--feed "https://levelup.gitconnected.com/feed" \
+				--feed "https://medium.com/@samurai.stateless.coder/feed" \
+				--feed "https://blog.stackademic.com/feed" \
+				--feed "https://medium.com/@grinaldiwisnu/feed" \
+				--feed "https://medium.com/@utsavmadaan823/feed" \
+				--feed "https://medium.com/@aleksei.aleinikov.gr/feed" \
+				--feed "https://medium.com/@gopinathr143/feed" \
+				--feed "https://medium.com/@yardenlaif/feed" \
+				--feed "https://gauravsarma1992.medium.com/feed" \
+				--feed "https://medium.com/@yardenlaif/feed" \
+				--feed "https://medium.com/@briannqc/feed" \
+				--feed "https://medium.com/@jamal.kaksouri/feed" \
+				--feed "https://medium.com/@ravikumar19997/feed" \
+				--feed "https://medium.com/@sanilkhurana7/feed" \
+				--feed "https://arshad404.medium.com//feed"
 
 
 list:

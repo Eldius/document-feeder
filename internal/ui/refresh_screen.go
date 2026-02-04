@@ -3,6 +3,10 @@ package ui
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -10,9 +14,6 @@ import (
 	"github.com/eldius/document-feeder/internal/adapter"
 	"github.com/eldius/document-feeder/internal/model"
 	"golang.org/x/term"
-	"os"
-	"strings"
-	"time"
 )
 
 const (
@@ -48,7 +49,7 @@ var (
 		Bold(true)
 	notProcessedYetStyle = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#777777")).
-		Bold(false)
+		Bold(true)
 )
 
 type refreshScreenModel struct {
@@ -89,6 +90,9 @@ func (m *refreshScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, cmd
 		}
 	case tickMsg:
+		if m.idx == m.feedCount {
+			return m, m.progress.SetPercent(1)
+		}
 		return m, m.progress.SetPercent(float64(m.idx) / float64(m.feedCount))
 
 	case tea.WindowSizeMsg:
@@ -125,7 +129,7 @@ func (m *refreshScreenModel) process() tea.Cmd {
 		}
 		m.idx++
 		if m.idx == m.feedCount {
-			return nil
+			return tickCmd()
 		}
 		return refreshNextFeed{}
 	}
@@ -141,8 +145,8 @@ func (m *refreshScreenModel) View() string {
 
 	m.viewport.SetContent(strings.Join(m.feedsList, "\n"))
 
-	return m.viewport.View() + "\n\n" +
-		pad + m.progress.View() + "\n\n" +
+	return m.viewport.View() + "\n" +
+		pad + m.progress.View() + "\n" +
 		pad + helpStyle("Press q / ctrl+c to quit")
 }
 
