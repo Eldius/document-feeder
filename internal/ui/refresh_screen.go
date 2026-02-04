@@ -28,11 +28,16 @@ var (
 		return lipgloss.NewStyle().BorderStyle(b).Padding(0, 1)
 	}()
 
-	infoStyle = func() lipgloss.Style {
-		b := lipgloss.RoundedBorder()
-		b.Left = "┤"
-		return titleStyle.BorderStyle(b)
-	}()
+	//infoStyle = func() lipgloss.Style {
+	//	b := lipgloss.RoundedBorder()
+	//	b.Left = "┤"
+	//	return titleStyle.BorderStyle(b)
+	//}()
+
+	vpStyle = lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()). // Use RoundedBorder or NormalBorder
+		BorderForeground(lipgloss.Color("63")). // Set the border color
+		Padding(1, 2) // Add some padding inside the border
 
 	helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#626262")).Render
 
@@ -104,6 +109,10 @@ func (m *refreshScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *refreshScreenModel) process() tea.Cmd {
 	return func() tea.Msg {
+		if m.idx >= m.feedCount-1 {
+			return tea.Quit
+		}
+
 		feed := m.feeds[m.idx]
 		err := m.a.RefreshFeed(m.ctx, feed)
 		if err != nil {
@@ -120,9 +129,17 @@ func (m *refreshScreenModel) process() tea.Cmd {
 }
 
 func (m *refreshScreenModel) View() string {
-	m.viewport.SetContent(m.content)
 	pad := strings.Repeat(" ", padding)
-	return m.viewport.View() + "\n" + fmt.Sprintf("Processing feed %s", m.feeds[m.idx].Title) + "\n\n" +
+	if m.idx == m.feedCount {
+		return m.viewport.View() + "\nFinished processing feeds!" + "\n\n" +
+			pad + m.progress.View() + "\n\n" +
+			pad + helpStyle("Press q / ctrl+c to quit")
+	}
+
+	feed := m.feeds[m.idx]
+	m.viewport.SetContent(m.content + fmt.Sprintf("Processing feed %s", feed.Title))
+
+	return m.viewport.View() + "\n\n" +
 		pad + m.progress.View() + "\n\n" +
 		pad + helpStyle("Press q / ctrl+c to quit")
 }
@@ -140,6 +157,7 @@ func RefreshScreen(ctx context.Context, a *adapter.FeedAdapter) error {
 		return fmt.Errorf("error getting feeds: %w", err)
 	}
 	vp := viewport.New(width-padding*2-4, height-5)
+	vp.Style = vpStyle
 
 	ctx, cancel := context.WithCancel(ctx)
 	m := &refreshScreenModel{
