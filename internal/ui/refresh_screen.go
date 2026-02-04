@@ -29,12 +29,6 @@ var (
 		return lipgloss.NewStyle().BorderStyle(b).Padding(0, 1)
 	}()
 
-	//infoStyle = func() lipgloss.Style {
-	//	b := lipgloss.RoundedBorder()
-	//	b.Left = "┤"
-	//	return titleStyle.BorderStyle(b)
-	//}()
-
 	vpStyle = lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()). // Use RoundedBorder or NormalBorder
 		BorderForeground(lipgloss.Color("63")). // Set the border color
@@ -48,6 +42,13 @@ var (
 
 	refreshErrorStyle = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#FF5555"))
+
+	processingStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#0a4d94")).
+		Bold(true)
+	notProcessedYetStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#777777")).
+		Bold(false)
 )
 
 type refreshScreenModel struct {
@@ -57,6 +58,7 @@ type refreshScreenModel struct {
 	ctx       context.Context
 	cancel    context.CancelFunc
 	feeds     []*model.Feed
+	feedsList []string
 	content   string
 	idx       int
 	feedCount int
@@ -114,11 +116,12 @@ func (m *refreshScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *refreshScreenModel) process() tea.Cmd {
 	return func() tea.Msg {
 		feed := m.feeds[m.idx]
+		m.feedsList[m.idx] = processingStyle.Render(fmt.Sprintf("⏳  %s", feed.Title))
 		err := m.a.RefreshFeed(m.ctx, feed)
 		if err != nil {
-			m.content += refreshErrorStyle.Render("✗ %s", feed.Title) + "\n"
+			m.feedsList[m.idx] = refreshErrorStyle.Render(fmt.Sprintf("✗  %s", feed.Title)) + "\n"
 		} else {
-			m.content += refreshSuccessStyle.Render(fmt.Sprintf("✓  %s (%d articles)", feed.Title, len(feed.Items))) + "\n"
+			m.feedsList[m.idx] = refreshSuccessStyle.Render(fmt.Sprintf("✓  %s (%d articles)", feed.Title, len(feed.Items))) + "\n"
 		}
 		m.idx++
 		if m.idx == m.feedCount {
@@ -136,8 +139,7 @@ func (m *refreshScreenModel) View() string {
 			pad + helpStyle("Press q / ctrl+c to quit")
 	}
 
-	feed := m.feeds[m.idx]
-	m.viewport.SetContent(m.content + fmt.Sprintf("⏳  Processing feed %s", feed.Title))
+	m.viewport.SetContent(strings.Join(m.feedsList, "\n"))
 
 	return m.viewport.View() + "\n\n" +
 		pad + m.progress.View() + "\n\n" +
@@ -164,6 +166,10 @@ func newRefreshScreenModel(ctx context.Context, a *adapter.FeedAdapter) (*refres
 	}
 	vp := viewport.New(width-padding*2-4, height-4)
 	vp.Style = vpStyle
+	feedsList := make([]string, len(feeds))
+	for i, feed := range feeds {
+		feedsList[i] = notProcessedYetStyle.Render("   " + feed.Title)
+	}
 
 	ctx, cancel := context.WithCancel(ctx)
 	return &refreshScreenModel{
@@ -171,6 +177,7 @@ func newRefreshScreenModel(ctx context.Context, a *adapter.FeedAdapter) (*refres
 		ctx:       ctx,
 		cancel:    cancel,
 		feeds:     feeds,
+		feedsList: feedsList,
 		feedCount: len(feeds),
 		idx:       0,
 		a:         a,
