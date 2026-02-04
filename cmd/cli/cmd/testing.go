@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/eldius/document-feeder/internal/adapter"
+	"github.com/eldius/document-feeder/internal/ui"
 
 	"github.com/spf13/cobra"
 )
@@ -18,6 +20,16 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Println("testing")
+		a, err := adapter.NewDefaultAdapter()
+		if err != nil {
+			err := fmt.Errorf("creating adapter: %w", err)
+			fmt.Printf("failed to create adapter: %s\n", err)
+			return err
+		}
+		if err := ui.RefreshScreen(cmd.Context(), a); err != nil {
+			fmt.Printf("failed to refresh screen: %s\n", err)
+			return err
+		}
 		return nil
 	},
 }

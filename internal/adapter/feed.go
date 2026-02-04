@@ -86,18 +86,25 @@ func (a *FeedAdapter) Refresh(ctx context.Context) error {
 	}
 
 	for _, f := range feeds {
-		nf, err := a.Parse(ctx, f.FeedLink)
-		if err != nil {
-			return fmt.Errorf("parsing feed: %w", err)
+		if err := a.RefreshFeed(ctx, f); err != nil {
+			return fmt.Errorf("refreshing feed: %w", err)
 		}
-		f.AddItems(nf.Items...)
-		if err := a.r.Persist(ctx, f); err != nil {
-			return fmt.Errorf("persisting feed: %w", err)
-		}
+	}
+	return nil
+}
 
-		if err := a.docs.Save(ctx, f); err != nil {
-			return fmt.Errorf("saving article: %w", err)
-		}
+func (a *FeedAdapter) RefreshFeed(ctx context.Context, f *model.Feed) error {
+	nf, err := a.Parse(ctx, f.FeedLink)
+	if err != nil {
+		return fmt.Errorf("parsing feed: %w", err)
+	}
+	f.AddItems(nf.Items...)
+	if err := a.r.Persist(ctx, f); err != nil {
+		return fmt.Errorf("persisting feed: %w", err)
+	}
+
+	if err := a.docs.Save(ctx, f); err != nil {
+		return fmt.Errorf("saving article: %w", err)
 	}
 	return nil
 }

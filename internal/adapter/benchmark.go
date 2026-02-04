@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
+	"github.com/go-kit/log"
 	"log/slog"
 	"math/rand/v2"
 	"os"
@@ -12,7 +13,6 @@ import (
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
 
 	"github.com/eldius/document-feeder/internal/client/ollama"
-	"github.com/eldius/document-feeder/internal/ui"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/tsdb"
 
@@ -30,15 +30,29 @@ const (
 	metricModelLabel           = "model"
 )
 
+var (
+	_ log.Logger = &tsdbLogger{}
+)
+
 type Benchmark struct {
 	c         ollama.Client
 	db        *tsdb.DB
 	iterCount int
 }
 
+type tsdbLogger struct {
+	l *slog.Logger
+}
+
+func (t tsdbLogger) Log(keyvals ...any) error {
+	t.l.With("keyvals", keyvals).Debug("tsdbLogger")
+	return nil
+}
+
 func NewTSDB(path string) (*tsdb.DB, error) {
 	_ = os.MkdirAll(path, 0755)
-	return tsdb.Open(path, slog.With("pkg", "tsdb"), nil, tsdb.DefaultOptions(), nil)
+	l := &tsdbLogger{slog.With("tsdb", path)}
+	return tsdb.Open(path, l, nil, tsdb.DefaultOptions(), nil)
 }
 
 func NewBenchmark(c ollama.Client, db *tsdb.DB, iterCount int) *Benchmark {
@@ -89,7 +103,7 @@ func (b *Benchmark) Generate(ctx context.Context, models []string) error {
 }
 
 func (b *Benchmark) Embeddings(ctx context.Context, models []string) error {
-	
+
 	return fmt.Errorf("not implemented")
 }
 
@@ -148,8 +162,8 @@ func execute(ctx context.Context, db *tsdb.DB, c ollama.Client, model, question 
 }
 
 func generate(ctx context.Context, c ollama.Client, model, question string) (*BenchmarkResult, error) {
-	cancel := ui.ProcessingScreen(ctx, fmt.Sprintf("Processing model %s with question %s", model, question))
-	defer cancel()
+	//cancel := ui.ProcessingScreen(ctx, fmt.Sprintf("Processing model %s with question %s", model, question))
+	//defer cancel()
 
 	start := time.Now()
 	res, err := c.GenerateCall(ctx, ollama.GenerateRequest{
