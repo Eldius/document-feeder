@@ -12,6 +12,7 @@ import (
 	"golang.org/x/term"
 	"os"
 	"strings"
+	"time"
 )
 
 const (
@@ -44,6 +45,7 @@ var (
 	refreshSuccessStyle = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#04B575")).
 		Bold(true)
+
 	refreshErrorStyle = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#FF5555"))
 )
@@ -68,7 +70,7 @@ func refreshFeedMsg() tea.Cmd {
 }
 
 func (m *refreshScreenModel) Init() tea.Cmd {
-	return refreshFeedMsg()
+	return tea.Batch(refreshFeedMsg(), tickCmd())
 }
 
 func (m *refreshScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -84,6 +86,8 @@ func (m *refreshScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.viewport = vp
 			return m, cmd
 		}
+	case tickMsg:
+		return m, m.progress.SetPercent(float64(m.idx) / float64(m.feedCount))
 
 	case tea.WindowSizeMsg:
 		m.progress.Width = msg.Width - padding*2 - 4
@@ -100,7 +104,7 @@ func (m *refreshScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	case refreshNextFeed:
-		cmd := m.progress.IncrPercent(1 / float64(m.feedCount))
+		cmd := m.progress.SetPercent(float64(m.idx) / float64(m.feedCount))
 		return m, tea.Batch(cmd, m.process())
 	default:
 		return m, nil
@@ -109,20 +113,16 @@ func (m *refreshScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *refreshScreenModel) process() tea.Cmd {
 	return func() tea.Msg {
-		if m.idx >= m.feedCount-1 {
-			return tea.Quit
-		}
-
 		feed := m.feeds[m.idx]
 		err := m.a.RefreshFeed(m.ctx, feed)
 		if err != nil {
 			m.content += refreshErrorStyle.Render("✗ %s", feed.Title) + "\n"
 		} else {
-			m.content += refreshSuccessStyle.Render(fmt.Sprintf("✓ %s (%d articles)", feed.Title, len(feed.Items))) + "\n"
+			m.content += refreshSuccessStyle.Render(fmt.Sprintf("✓  %s (%d articles)", feed.Title, len(feed.Items))) + "\n"
 		}
 		m.idx++
 		if m.idx == m.feedCount {
-			return tea.Quit
+			return nil
 		}
 		return refreshNextFeed{}
 	}
@@ -137,7 +137,7 @@ func (m *refreshScreenModel) View() string {
 	}
 
 	feed := m.feeds[m.idx]
-	m.viewport.SetContent(m.content + fmt.Sprintf(" ⏳ Processing feed %s", feed.Title))
+	m.viewport.SetContent(m.content + fmt.Sprintf("⏳  Processing feed %s", feed.Title))
 
 	return m.viewport.View() + "\n\n" +
 		pad + m.progress.View() + "\n\n" +
@@ -146,21 +146,27 @@ func (m *refreshScreenModel) View() string {
 
 type refreshNextFeed struct{}
 
-func RefreshScreen(ctx context.Context, a *adapter.FeedAdapter) error {
+func tickCmd() tea.Cmd {
+	return tea.Tick(time.Second*1, func(t time.Time) tea.Msg {
+		return tickMsg(t)
+	})
+}
+
+func newRefreshScreenModel(ctx context.Context, a *adapter.FeedAdapter) (*refreshScreenModel, error) {
 	width, height, err := term.GetSize(int(os.Stdout.Fd()))
 	if err != nil {
-		return fmt.Errorf("getting terminal size: %w", err)
+		return nil, fmt.Errorf("getting terminal size: %w", err)
 	}
 	fmt.Printf("Initial terminal size: %dx%d\n", width, height)
 	feeds, err := a.All(ctx)
 	if err != nil {
-		return fmt.Errorf("error getting feeds: %w", err)
+		return nil, fmt.Errorf("error getting feeds: %w", err)
 	}
 	vp := viewport.New(width-padding*2-4, height-4)
 	vp.Style = vpStyle
 
 	ctx, cancel := context.WithCancel(ctx)
-	m := &refreshScreenModel{
+	return &refreshScreenModel{
 		progress:  progress.New(progress.WithDefaultGradient(), progress.WithWidth(width-padding*2-4)),
 		ctx:       ctx,
 		cancel:    cancel,
@@ -169,8 +175,15 @@ func RefreshScreen(ctx context.Context, a *adapter.FeedAdapter) error {
 		idx:       0,
 		a:         a,
 		viewport:  vp,
-	}
+	}, nil
 
+}
+
+func RefreshScreen(ctx context.Context, a *adapter.FeedAdapter) error {
+	m, err := newRefreshScreenModel(ctx, a)
+	if err != nil {
+		return fmt.Errorf("creating refresh screen model: %w", err)
+	}
 	if _, err := tea.NewProgram(m).Run(); err != nil {
 		err = fmt.Errorf("error running refresh screen: %w", err)
 		fmt.Println(err)
