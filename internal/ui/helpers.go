@@ -3,7 +3,9 @@ package ui
 import (
 	"charm.land/lipgloss/v2"
 	"fmt"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/eldius/document-feeder/internal/client/ollama"
+	"time"
 )
 
 func DisplayModels(ms *ollama.ModelsResponse) {
@@ -27,4 +29,14 @@ func DisplayModels(ms *ollama.ModelsResponse) {
 		fmt.Println("+---------------------------------------------")
 	}
 
+}
+
+// tickMsg is sent periodically to animate the dots.
+type tickMsg time.Time
+
+// tickCmd returns a command that sends a tickMsg every second.
+func tickCmd(d time.Duration) tea.Cmd {
+	return tea.Tick(d, func(t time.Time) tea.Msg {
+		return tickMsg(t)
+	})
 }

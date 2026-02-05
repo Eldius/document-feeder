@@ -17,8 +17,7 @@ import (
 )
 
 const (
-	padding  = 2
-	maxWidth = 80
+	refreshScreenPadding = 2
 )
 
 var (
@@ -30,26 +29,26 @@ var (
 		return lipgloss.NewStyle().BorderStyle(b).Padding(0, 1)
 	}()
 
-	vpStyle = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()). // Use RoundedBorder or NormalBorder
+	vpStyle                                         = lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).       // Use RoundedBorder or NormalBorder
 		BorderForeground(lipgloss.Color("63")). // Set the border color
-		Padding(1, 2) // Add some padding inside the border
+		Padding(1, 2)                           // Add some refreshScreenPadding inside the border
 
 	helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#626262")).Render
 
 	refreshSuccessStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#04B575")).
-		Bold(true)
+				Foreground(lipgloss.Color("#04B575")).
+				Bold(true)
 
 	refreshErrorStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FF5555"))
+				Foreground(lipgloss.Color("#FF5555"))
 
 	processingStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#0a4d94")).
-		Bold(true)
+			Foreground(lipgloss.Color("#0a4d94")).
+			Bold(true)
 	notProcessedYetStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#777777")).
-		Bold(true)
+				Foreground(lipgloss.Color("#777777")).
+				Bold(true)
 )
 
 type refreshScreenModel struct {
@@ -73,7 +72,7 @@ func refreshFeedMsg() tea.Cmd {
 }
 
 func (m *refreshScreenModel) Init() tea.Cmd {
-	return tea.Batch(refreshFeedMsg(), tickCmd())
+	return tea.Batch(refreshFeedMsg(), tickCmd(time.Second*1))
 }
 
 func (m *refreshScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -96,11 +95,11 @@ func (m *refreshScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.progress.SetPercent(float64(m.idx) / float64(m.feedCount))
 
 	case tea.WindowSizeMsg:
-		m.progress.Width = msg.Width - padding*2 - 4
+		m.progress.Width = msg.Width - refreshScreenPadding*2 - 4
 		//if m.progress.Width > maxWidth {
 		//	m.progress.Width = maxWidth
 		//}
-		m.viewport.Width = msg.Width - padding*2 - 4
+		m.viewport.Width = msg.Width - refreshScreenPadding*2 - 4
 		return m, nil
 
 	// FrameMsg is sent when the progress bar wants to animate itself
@@ -129,14 +128,14 @@ func (m *refreshScreenModel) process() tea.Cmd {
 		}
 		m.idx++
 		if m.idx == m.feedCount {
-			return tickCmd()
+			return tickCmd(time.Second * 1)
 		}
 		return refreshNextFeed{}
 	}
 }
 
 func (m *refreshScreenModel) View() string {
-	pad := strings.Repeat(" ", padding)
+	pad := strings.Repeat(" ", refreshScreenPadding)
 	if m.idx == m.feedCount {
 		return m.viewport.View() + "\nFinished processing feeds!" + "\n\n" +
 			pad + m.progress.View() + "\n\n" +
@@ -152,12 +151,6 @@ func (m *refreshScreenModel) View() string {
 
 type refreshNextFeed struct{}
 
-func tickCmd() tea.Cmd {
-	return tea.Tick(time.Second*1, func(t time.Time) tea.Msg {
-		return tickMsg(t)
-	})
-}
-
 func newRefreshScreenModel(ctx context.Context, a *adapter.FeedAdapter) (*refreshScreenModel, error) {
 	width, height, err := term.GetSize(int(os.Stdout.Fd()))
 	if err != nil {
@@ -168,7 +161,7 @@ func newRefreshScreenModel(ctx context.Context, a *adapter.FeedAdapter) (*refres
 	if err != nil {
 		return nil, fmt.Errorf("error getting feeds: %w", err)
 	}
-	vp := viewport.New(width-padding*2-4, height-4)
+	vp := viewport.New(refreshScreenMaxUIWidth(width), height-4)
 	vp.Style = vpStyle
 	feedsList := make([]string, len(feeds))
 	for i, feed := range feeds {
@@ -177,7 +170,7 @@ func newRefreshScreenModel(ctx context.Context, a *adapter.FeedAdapter) (*refres
 
 	ctx, cancel := context.WithCancel(ctx)
 	return &refreshScreenModel{
-		progress:  progress.New(progress.WithDefaultGradient(), progress.WithWidth(width-padding*2-4)),
+		progress:  progress.New(progress.WithDefaultGradient(), progress.WithWidth(refreshScreenMaxUIWidth(width))),
 		ctx:       ctx,
 		cancel:    cancel,
 		feeds:     feeds,
@@ -188,6 +181,10 @@ func newRefreshScreenModel(ctx context.Context, a *adapter.FeedAdapter) (*refres
 		viewport:  vp,
 	}, nil
 
+}
+
+func refreshScreenMaxUIWidth(screenWidth int) int {
+	return screenWidth - refreshScreenPadding*2 - 4
 }
 
 func RefreshScreen(ctx context.Context, a *adapter.FeedAdapter) error {

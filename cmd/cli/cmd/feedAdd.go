@@ -1,12 +1,9 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/eldius/document-feeder/internal/adapter"
-	"github.com/eldius/document-feeder/internal/model"
 	"github.com/eldius/document-feeder/internal/ui"
 	"github.com/spf13/cobra"
 )
@@ -22,54 +19,17 @@ Example: feed add https://www.heise.de/news/rss/heise-newsfeed.xml.
 	RunE: func(cmd *cobra.Command, args []string) error {
 		a, err := adapter.NewDefaultAdapter()
 		if err != nil {
-			err = fmt.Errorf("creating adapter: %v", err)
-			fmt.Printf("Failed to create adapter: %v\n", err)
+			err := fmt.Errorf("creating adapter: %w", err)
+			fmt.Printf("failed to create adapter: %s\n", err)
 			return err
 		}
-
-		errorStyle := lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("232")). // Dark text color for contrast
-			Background(lipgloss.Color("1")). // Red background
-			PaddingLeft(1).
-			PaddingRight(1).
-			MarginRight(1)
-
-		infoStyle := lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("0")). // Black text color
-			Background(lipgloss.Color("6")). // Cyan background
-			PaddingLeft(1).
-			PaddingRight(1).
-			MarginRight(1)
-
-		feedbackMessage := make([]string, len(feedAddOpts.feed))
-		for _, f := range feedAddOpts.feed {
-			feed := processFeed(cmd.Context(), a, f)
-			if feed == nil {
-				feedbackMessage = append(feedbackMessage, errorStyle.Render(fmt.Sprintf(" ==> ! Failed to parse %s", f)))
-				continue
-			}
-			feedbackMessage = append(feedbackMessage, infoStyle.Render(fmt.Sprintf(" ==> Feed %s added successfully. (%d articles)\n", feed.Title, len(feed.Items))))
-		}
-
-		for _, msg := range feedbackMessage {
-			fmt.Print(msg)
+		if err := ui.AddScreen(cmd.Context(), a, feedAddOpts.feed); err != nil {
+			err := fmt.Errorf("adding feeds: %w", err)
+			fmt.Printf("failed to add feeds: %s\n", err)
+			return err
 		}
 		return nil
 	},
-}
-
-func processFeed(ctx context.Context, a *adapter.FeedAdapter, feedURL string) *model.Feed {
-	cancel := ui.ProcessingScreen(ctx, fmt.Sprintf("Processing feed %s...", feedURL))
-	defer cancel()
-
-	feed, err := a.Parse(ctx, feedURL)
-	if err != nil {
-		fmt.Printf("Failed to parse feed: %v\n", fmt.Errorf("parsing feed: %v", err))
-		return nil
-	}
-	return feed
 }
 
 var (

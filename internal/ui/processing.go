@@ -10,9 +10,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// tickMsg is sent periodically to animate the dots.
-type tickMsg time.Time
-
 // doneMsg is sent when the context is cancelled.
 type doneMsg struct{}
 
@@ -34,15 +31,8 @@ func waitForContext(ctx context.Context) tea.Cmd {
 	}
 }
 
-// tick returns a command that sends a message every 500ms.
-func tick() tea.Cmd {
-	return tea.Tick(time.Millisecond*500, func(t time.Time) tea.Msg {
-		return tickMsg(t)
-	})
-}
-
 func (m processingScreenModel) Init() tea.Cmd {
-	return tea.Batch(tick(), waitForContext(m.ctx))
+	return tea.Batch(tickCmd(500*time.Millisecond), waitForContext(m.ctx))
 }
 
 func (m processingScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -56,7 +46,7 @@ func (m processingScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 	case tickMsg:
 		m.dots = (m.dots + 1) % 4
-		return m, tick()
+		return m, tickCmd(500 * time.Millisecond)
 	case doneMsg:
 		m.quitting = true
 		return m, tea.Quit

@@ -50,7 +50,8 @@ add:
 				--feed "https://medium.com/@jamal.kaksouri/feed" \
 				--feed "https://medium.com/@ravikumar19997/feed" \
 				--feed "https://medium.com/@sanilkhurana7/feed" \
-				--feed "https://arshad404.medium.com//feed"
+				--feed "https://arshad404.medium.com//feed" \
+				--feed "https://computaria.gitlab.io/blog/feed.xml"
 
 
 list:
