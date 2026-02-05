@@ -20,6 +20,8 @@ add:
 	go run \
 		./cmd/cli \
 			feed add \
+				--feed "https://cloudwithazeem.medium.com/feed" \
+				--feed "https://alexrios.me/rss.xml" \
 				--feed "https://medium.com/@eldius/feed" \
 				--feed "https://dev.to/feed/eldius" \
 				--feed "https://dev.to/feed/tag/go" \
@@ -43,7 +45,6 @@ add:
 				--feed "https://medium.com/@utsavmadaan823/feed" \
 				--feed "https://medium.com/@aleksei.aleinikov.gr/feed" \
 				--feed "https://medium.com/@gopinathr143/feed" \
-				--feed "https://medium.com/@yardenlaif/feed" \
 				--feed "https://gauravsarma1992.medium.com/feed" \
 				--feed "https://medium.com/@yardenlaif/feed" \
 				--feed "https://medium.com/@briannqc/feed" \
@@ -51,7 +52,10 @@ add:
 				--feed "https://medium.com/@ravikumar19997/feed" \
 				--feed "https://medium.com/@sanilkhurana7/feed" \
 				--feed "https://arshad404.medium.com//feed" \
-				--feed "https://computaria.gitlab.io/blog/feed.xml"
+				--feed "https://computaria.gitlab.io/blog/feed.xml" \
+				--feed "https://www.dolthub.com/blog/rss.xml" \
+				--feed "https://blog.gaborkoos.com/feed.xml" \
+				--feed "https://antonz.org/feed.xml"
 
 
 list:
