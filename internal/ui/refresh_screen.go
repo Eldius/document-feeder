@@ -23,32 +23,32 @@ const (
 var (
 	_ tea.Model = &refreshScreenModel{}
 
-	titleStyle = func() lipgloss.Style {
-		b := lipgloss.RoundedBorder()
-		b.Right = "├"
-		return lipgloss.NewStyle().BorderStyle(b).Padding(0, 1)
-	}()
+	// titleStyle = func() lipgloss.Style {
+	// 	b := lipgloss.RoundedBorder()
+	// 	b.Right = "├"
+	// 	return lipgloss.NewStyle().BorderStyle(b).Padding(0, 1)
+	// }()
 
-	vpStyle                                         = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).       // Use RoundedBorder or NormalBorder
+	vpStyle = lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()). // Use RoundedBorder or NormalBorder
 		BorderForeground(lipgloss.Color("63")). // Set the border color
-		Padding(1, 2)                           // Add some refreshScreenPadding inside the border
+		Padding(1, 2) // Add some refreshScreenPadding inside the border
 
 	helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#626262")).Render
 
 	refreshSuccessStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#04B575")).
-				Bold(true)
+		Foreground(lipgloss.Color("#04B575")).
+		Bold(true)
 
 	refreshErrorStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#FF5555"))
+		Foreground(lipgloss.Color("#FF5555"))
 
 	processingStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#0a4d94")).
-			Bold(true)
+		Foreground(lipgloss.Color("#0a4d94")).
+		Bold(true)
 	notProcessedYetStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#777777")).
-				Bold(true)
+		Foreground(lipgloss.Color("#777777")).
+		Bold(true)
 )
 
 type refreshScreenModel struct {
@@ -59,10 +59,8 @@ type refreshScreenModel struct {
 	cancel    context.CancelFunc
 	feeds     []*model.Feed
 	feedsList []string
-	content   string
 	idx       int
 	feedCount int
-	ready     bool
 }
 
 func refreshFeedMsg() tea.Cmd {

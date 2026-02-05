@@ -12,7 +12,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/eldius/document-feeder/internal/adapter"
-	"github.com/eldius/document-feeder/internal/model"
 	"golang.org/x/term"
 )
 
@@ -57,14 +56,11 @@ type addScreenModel struct {
 	progress     progress.Model
 	ctx          context.Context
 	cancel       context.CancelFunc
-	feeds        []*model.Feed
 	feedsList    []string
 	feedsURLList []string
 	title        string
-	content      string
 	idx          int
 	feedCount    int
-	ready        bool
 }
 
 func addFeedMsg() tea.Cmd {

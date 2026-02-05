@@ -1,6 +1,6 @@
 module github.com/eldius/document-feeder
 
-go 1.25.6
+go 1.25.7
 
 tool (
 	github.com/goreleaser/goreleaser/v2
@@ -15,12 +15,14 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/eldius/initial-config-go v0.0.30
+	github.com/go-kit/log v0.2.1
 	github.com/mmcdole/gofeed v1.3.0
 	github.com/philippgille/chromem-go v0.7.0
 	github.com/prometheus/prometheus v0.51.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	github.com/tmc/langchaingo v0.1.14
+	golang.org/x/term v0.38.0
 	gonum.org/v1/plot v0.16.0
 	nmyk.io/cowsay v1.0.2
 )
@@ -188,7 +190,6 @@ require (
 	github.com/go-git/go-billy/v5 v5.7.0 // indirect
 	github.com/go-git/go-git/v5 v5.16.4 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
-	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -410,7 +411,6 @@ require (
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/telemetry v0.0.0-20251203150158-8fff8a5912fc // indirect
-	golang.org/x/term v0.38.0 // indirect
 	golang.org/x/text v0.32.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	golang.org/x/tools v0.40.0 // indirect
