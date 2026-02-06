@@ -82,7 +82,7 @@ func NewDefaultDocumentVectorizer() (DocumentVectorizer, error) {
 		return nil, fmt.Errorf("opening db: %w", err)
 	}
 
-	textsplitter.NewTokenSplitter(
+	splitter := textsplitter.NewTokenSplitter(
 		textsplitter.WithChunkSize(config.GetOllamaEmbeddingChunkSize()),
 		textsplitter.WithModelName(embeddingModel),
 		textsplitter.WithChunkOverlap(config.GetOllamaEmbeddingChunkOverlap()),
@@ -91,7 +91,7 @@ func NewDefaultDocumentVectorizer() (DocumentVectorizer, error) {
 	ollamaClient := ollama.NewOllamaClient()
 	return NewDocumentVectorizer(
 		db,
-		textsplitter.NewRecursiveCharacter(),
+		splitter,
 		ollamaClient,
 		embeddingModel,
 		config.GetOllamaEmbeddingChunkSize(),
