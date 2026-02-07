@@ -24,7 +24,6 @@ require (
 	github.com/tmc/langchaingo v0.1.14
 	golang.org/x/term v0.38.0
 	gonum.org/v1/plot v0.16.0
-	nmyk.io/cowsay v1.0.2
 )
 
 require (

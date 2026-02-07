@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/eldius/document-feeder/internal/adapter"
+	"github.com/eldius/initial-config-go/logs"
 	"golang.org/x/term"
 	"os"
 	"strings"
@@ -36,7 +37,7 @@ func NewStreamModel(ctx context.Context, textChan <-chan string) tea.Model {
 		return nil
 	}
 	fmt.Printf("Initial terminal size: %dx%d\n", width, height)
-	vp := viewport.New(streamMaxUIWidth(width), streamViewportHeight(height))
+	vp := viewport.New(screenMaxUIWidth(width), screenMaxUIWidth(height))
 	vp.SetContent("")
 
 	return &streamGenerateScreenModel{
@@ -55,13 +56,17 @@ func (m *streamGenerateScreenModel) Init() tea.Cmd {
 }
 
 // Comando para aguardar texto do canal
-func (m streamGenerateScreenModel) waitForText() tea.Cmd {
+func (m *streamGenerateScreenModel) waitForText() tea.Cmd {
 	return func() tea.Msg {
 		select {
 		case text, ok := <-m.textChan:
 			if !ok {
 				return channelClosedMsg{}
 			}
+			logs.NewLogger(m.ctx, logs.KeyValueData{
+				"chunk_size": len(text),
+				"chunk_text": text,
+			}).Debug("text received")
 			return textReceivedMsg(text)
 		case <-m.ctx.Done():
 			return tea.Quit()
@@ -75,7 +80,7 @@ func (m *streamGenerateScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		if !m.ready {
-			m.vp = viewport.New(streamMaxUIWidth(msg.Width), streamViewportHeight(msg.Height))
+			m.vp = viewport.New(screenMaxUIWidth(msg.Width), screenMaxUIWidth(msg.Height))
 			m.vp.SetContent(m.content.String())
 			m.ready = true
 		} else {
@@ -89,9 +94,6 @@ func (m *streamGenerateScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.vp.GotoBottom()
 		return m, m.waitForText()
 
-	case channelClosedMsg:
-		// Canal foi fechado, não fazemos mais nada
-
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
@@ -99,6 +101,8 @@ func (m *streamGenerateScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		default:
 			m.vp, cmd = m.vp.Update(msg)
 		}
+	case channelClosedMsg:
+
 	}
 
 	return m, cmd
@@ -167,12 +171,4 @@ func RunStreamApp(ctx context.Context, question string) error {
 	})
 	wg.Wait()
 	return nil
-}
-
-func streamMaxUIWidth(screenWidth int) int {
-	return screenWidth - addScreenPadding*2 - 4
-}
-
-func streamViewportHeight(screenHeight int) int {
-	return screenHeight - 7
 }

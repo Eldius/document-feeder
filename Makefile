@@ -69,14 +69,14 @@ refresh:
 	go run \
 		./cmd/cli \
 			feed \
-				refresh
+				refresh -i
 
 
 search:
 	go run \
 		./cmd/cli \
 			feed \
-				search "explain to me how to debug a golang code from command line"
+				search "explain how to debug a golang code from command line"
 
 
 ask:

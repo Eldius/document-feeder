@@ -25,8 +25,13 @@ type repository struct {
 }
 
 func NewRepository() Repository {
-	_ = os.MkdirAll("data", 0700)
-	db, _ := storm.Open("data/feeds.db")
+	_ = os.MkdirAll("data", 0766)
+	db, err := storm.Open("data/feeds.db")
+	if err != nil {
+		err := fmt.Errorf("opening db: %w", err)
+		fmt.Println("Failed opening db:", err)
+		panic(err)
+	}
 	return &repository{db: db}
 }
 
@@ -39,6 +44,9 @@ func (r *repository) Persist(_ context.Context, f *model.Feed) error {
 }
 
 func (r *repository) All(_ context.Context) ([]*model.Feed, error) {
+	if r.db == nil {
+		return nil, fmt.Errorf("db is nil")
+	}
 	var feeds []*model.Feed
 	err := r.db.All(&feeds)
 	return feeds, err

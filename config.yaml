@@ -28,8 +28,8 @@ ollama:
     #   chunk_size: 4096
     #   chunk_overlap: 409
     generation:
-        model: llama3:8b-instruct-q4_K_M
+#        model: llama3:8b-instruct-q4_K_M
         # model: deepseek-r1:1.5b
         # model: deepseek-r1:7b
-        # model: tinyllama:latest
+        model: tinyllama:latest
         cache_enabled: true

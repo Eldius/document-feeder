@@ -16,10 +16,6 @@ import (
 	"golang.org/x/term"
 )
 
-const (
-	addScreenPadding = 2
-)
-
 var (
 	_ tea.Model = &addScreenModel{}
 
@@ -32,7 +28,7 @@ var (
 	addVpStyle                                         = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).       // Use RoundedBorder or NormalBorder
 			BorderForeground(lipgloss.Color("63")). // Set the border color
-			Padding(1, 2)                           // Add some addScreenPadding inside the border
+			Padding(1, 2)                           // Add some screenPadding inside the border
 
 	addHelpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#626262")).Render
 
@@ -94,9 +90,9 @@ func (m *addScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(m.progress.SetPercent(float64(m.idx)/float64(m.feedCount)), tickCmd(time.Second*1))
 
 	case tea.WindowSizeMsg:
-		m.progress.Width = msg.Width - addScreenPadding*2 - 4
+		m.progress.Width = msg.Width - screenPadding*2 - 4
 		m.title = addScreenTitleContent(m.title, msg.Width)
-		m.viewport.Width = msg.Width - addScreenPadding*2 - 4
+		m.viewport.Width = msg.Width - screenPadding*2 - 4
 		return m, nil
 
 	// FrameMsg is sent when the progress bar wants to animate itself
@@ -138,7 +134,7 @@ func (m *addScreenModel) process() tea.Cmd {
 }
 
 func (m *addScreenModel) View() string {
-	pad := strings.Repeat(" ", addScreenPadding)
+	pad := strings.Repeat(" ", screenPadding)
 	if m.idx == m.feedCount {
 		return m.viewport.View() + "\nFinished processing feeds!" + "\n\n" +
 			pad + m.progress.View() + "\n\n" +
@@ -160,7 +156,7 @@ func newAddScreenModel(ctx context.Context, a *adapter.FeedAdapter, feedURLs []s
 		return nil, fmt.Errorf("getting terminal size: %w", err)
 	}
 	fmt.Printf("Initial terminal size: %dx%d\n", width, height)
-	vp := viewport.New(addScreenMaxUIWidth(width), addScreenViewportHeight(height))
+	vp := viewport.New(screenMaxUIWidth(width), addScreenViewportHeight(height))
 	vp.Style = addVpStyle
 	feedsList := make([]string, len(feedURLs))
 	for i, feed := range feedURLs {
@@ -169,7 +165,7 @@ func newAddScreenModel(ctx context.Context, a *adapter.FeedAdapter, feedURLs []s
 
 	ctx, cancel := context.WithCancel(ctx)
 	return &addScreenModel{
-		progress:     progress.New(progress.WithDefaultGradient(), progress.WithWidth(addScreenMaxUIWidth(width))),
+		progress:     progress.New(progress.WithDefaultGradient(), progress.WithWidth(screenMaxUIWidth(width))),
 		ctx:          ctx,
 		cancel:       cancel,
 		feedsList:    feedsList,
@@ -182,12 +178,8 @@ func newAddScreenModel(ctx context.Context, a *adapter.FeedAdapter, feedURLs []s
 	}, nil
 }
 
-func addScreenMaxUIWidth(screenWidth int) int {
-	return screenWidth - addScreenPadding*2 - 4
-}
-
 func addScreenTitleContent(title string, screenWidth int) string {
-	maxViewportWidth := addScreenMaxUIWidth(screenWidth)
+	maxViewportWidth := screenMaxUIWidth(screenWidth)
 	slog.With("title_length", len(title), "max_width", maxViewportWidth).Debug(
 		"Calculating title padding size",
 	)

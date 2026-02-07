@@ -5,11 +5,10 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/eldius/document-feeder/internal/ui"
 
 	"github.com/eldius/document-feeder/internal/adapter"
 	"github.com/eldius/document-feeder/internal/model"
-	"github.com/eldius/document-feeder/internal/ui"
-
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -45,11 +44,16 @@ to quickly create a Cobra application.`,
 			articles = append(articles, a.Article)
 		}
 
-		if err := ui.ArticleReaderScreen(cmd.Context(), articles); err != nil {
-			err := fmt.Errorf("reading articles: %w", err)
+		//if err := ui.ArticleReaderScreen(cmd.Context(), articles); err != nil {
+		//	err := fmt.Errorf("reading articles: %w", err)
+		//	fmt.Printf("failed to read articles: %s\n", err)
+		//	return err
+		//}
+		if err := ui.ContentReader(cmd.Context(), articles); err != nil {
 			fmt.Printf("failed to read articles: %s\n", err)
 			return err
 		}
+
 		return nil
 	},
 }

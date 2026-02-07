@@ -5,6 +5,8 @@ import (
 	"fmt"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/eldius/document-feeder/internal/client/ollama"
+	"log/slog"
+	"strings"
 	"time"
 )
 
@@ -39,4 +41,43 @@ func tickCmd(d time.Duration) tea.Cmd {
 	return tea.Tick(d, func(t time.Time) tea.Msg {
 		return tickMsg(t)
 	})
+}
+
+const (
+	screenPadding = 2
+)
+
+func screenMaxUIWidth(screenWidth int) int {
+	calculatedWidth := screenWidth - (screenPadding*2 + 4)
+	slog.With("screen_width", screenWidth, "max_ui_width", calculatedWidth).Debug("computing max ui width")
+	return calculatedWidth
+}
+
+func lineWrap(s string, k int) string {
+	var result []string
+	// Use strings.Fields to handle all kinds of whitespace and get clean words.
+	words := strings.Fields(s)
+
+	if len(words) == 0 {
+		return ""
+	}
+
+	currentLine := words[0]
+
+	for i := 1; i < len(words); i++ {
+		word := words[i]
+		// Check if adding the next word (plus a space) exceeds the limit.
+		if len(currentLine)+1+len(word) <= k {
+			currentLine += " " + word
+		} else {
+			// Start a new line if the word doesn't fit.
+			result = append(result, currentLine)
+			currentLine = word
+		}
+	}
+
+	// Add the last accumulated line.
+	result = append(result, currentLine)
+
+	return strings.Join(result, "\n")
 }

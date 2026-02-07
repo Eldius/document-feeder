@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/eldius/document-feeder/internal/ui"
 
 	"github.com/eldius/document-feeder/internal/adapter"
 
@@ -25,6 +26,19 @@ to quickly create a Cobra application.`,
 			fmt.Printf("failed to create adapter: %s\n", err)
 			return err
 		}
+		if cmdRefreshOpts.interactive {
+			a, err := adapter.NewDefaultAdapter()
+			if err != nil {
+				err := fmt.Errorf("creating adapter: %w", err)
+				fmt.Printf("failed to create adapter: %s\n", err)
+				return err
+			}
+			if err := ui.RefreshScreen(cmd.Context(), a); err != nil {
+				fmt.Printf("failed to refresh screen: %s\n", err)
+				return err
+			}
+			return nil
+		}
 		fmt.Println("refreshing feeds")
 		if err := a.Refresh(cmd.Context()); err != nil {
 			err := fmt.Errorf("refreshing feeds: %w", err)
@@ -35,8 +49,16 @@ to quickly create a Cobra application.`,
 	},
 }
 
+var (
+	cmdRefreshOpts struct {
+		interactive bool
+	}
+)
+
 func init() {
 	feedCmd.AddCommand(feedRefreshCmd)
+
+	feedRefreshCmd.Flags().BoolVarP(&cmdRefreshOpts.interactive, "interactive", "i", false, "Visual execution feedback for the user.")
 
 	// Here you will define your flags and configuration settings.
 
