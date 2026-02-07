@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 	"time"
@@ -187,8 +188,18 @@ func addScreenMaxUIWidth(screenWidth int) int {
 
 func addScreenTitleContent(title string, screenWidth int) string {
 	maxViewportWidth := addScreenMaxUIWidth(screenWidth)
+	slog.With("title_length", len(title), "max_width", maxViewportWidth).Debug(
+		"Calculating title padding size",
+	)
+	slog.With("title_length", len(title), "max_width", maxViewportWidth).Debug(
+		"Calculating title padding size",
+	)
+	title = strings.TrimSpace(
+		strings.ReplaceAll(title, "\n", " "),
+	)
+	slog.With("title_length", len(title), "max_width", maxViewportWidth).Debug("Trimmed title to:")
 	titlePaddingSize := (maxViewportWidth - (len(title) + 2)) / 2
-	return strings.Repeat(" ", titlePaddingSize-2) + title + strings.Repeat(" ", titlePaddingSize-1)
+	return strings.Repeat(" ", titlePaddingSize) + title + strings.Repeat(" ", titlePaddingSize-1)
 }
 
 func addScreenViewportHeight(screenHeight int) int {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"github.com/eldius/initial-config-go/logs"
 	"slices"
 	"strings"
 	"text/template"
@@ -210,4 +211,42 @@ func (a *FeedAdapter) AskAQuestion(ctx context.Context, question string) (string
 	}
 
 	return response.Response, err
+}
+
+func (a *FeedAdapter) AskAQuestionStream(ctx context.Context, question string, ch chan string) error {
+	if a.cacheEnabled {
+		cacheID, err := a.docs.FindCacheID(ctx, question, a.cacheSimilarityThreshold)
+		if err == nil && cacheID != "" {
+			cache, err := a.r.FindGeneratedCache(ctx, cacheID)
+			if err == nil {
+				ch <- cache.Answer
+				return nil
+			}
+			logs.NewLogger(ctx).WithError(err).Warn("error finding generated cache")
+		}
+	}
+	docs, err := a.Search(ctx, question, 2)
+	if err != nil {
+		return fmt.Errorf("searching documents: %w", err)
+	}
+
+	data := promptTemplateData{Question: question, Results: docs}
+
+	var b strings.Builder
+	if err := a.tmpl.ExecuteTemplate(&b, "prompt.tmpl", data); err != nil {
+		return fmt.Errorf("executing template: %w", err)
+	}
+
+	if err := a.ollama.GenerateCallStream(
+		ctx,
+		ch,
+		ollama.GenerateRequest{
+			Prompt:    b.String(),
+			KeepAlive: 0,
+		},
+	); err != nil {
+		return fmt.Errorf("generating response: %w", err)
+	}
+
+	return nil
 }

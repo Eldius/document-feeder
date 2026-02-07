@@ -32,5 +32,4 @@ ollama:
         # model: deepseek-r1:1.5b
         # model: deepseek-r1:7b
         # model: tinyllama:latest
-        cache_similarity_threshold: 0.8
         cache_enabled: true

@@ -1,10 +1,12 @@
 package ollama
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/eldius/initial-config-go/logs"
 	"net/http"
 
 	"github.com/eldius/document-feeder/internal/config"
@@ -23,6 +25,7 @@ type Client interface {
 	ModelDetailsCall(ctx context.Context, payload ModelDetailsRequest) (*ModelDetailsResponse, error)
 	ModelDetails(ctx context.Context, model string) (*ModelDetailsResponse, error)
 	GenerateCall(ctx context.Context, reqPayload GenerateRequest) (*GenerateResponse, error)
+	GenerateCallStream(ctx context.Context, ch chan string, reqPayload GenerateRequest) error
 }
 
 type client struct {
@@ -140,6 +143,11 @@ func (c *client) ChatFunc(ctx context.Context, prompt string, think bool, opts .
 }
 
 func (c *client) GenerateCall(ctx context.Context, reqPayload GenerateRequest) (*GenerateResponse, error) {
+	reqPayload.Stream = false
+	if reqPayload.Model == "" {
+		reqPayload.Model = c.generationModel
+	}
+
 	b, err := json.Marshal(reqPayload)
 	if err != nil {
 		return nil, fmt.Errorf("marshalling request payload: %w", err)
@@ -160,6 +168,48 @@ func (c *client) GenerateCall(ctx context.Context, reqPayload GenerateRequest) (
 		return nil, fmt.Errorf("decoding response: %w", err)
 	}
 	return &response, nil
+}
+
+func (c *client) GenerateCallStream(ctx context.Context, ch chan string, reqPayload GenerateRequest) error {
+	reqPayload.Stream = true
+	if reqPayload.Model == "" {
+		reqPayload.Model = c.generationModel
+	}
+
+	b, err := json.Marshal(reqPayload)
+	if err != nil {
+		return fmt.Errorf("marshalling request payload: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint+"/api/generate", bytes.NewBuffer(b))
+	if err != nil {
+		return fmt.Errorf("creating request: %w", err)
+	}
+	res, err := c.c.Do(req)
+	if err != nil {
+		return fmt.Errorf("executing request: %w", err)
+	}
+	defer func() { _ = res.Body.Close() }()
+
+	scanner := bufio.NewScanner(res.Body)
+	for scanner.Scan() {
+		chunkBytes := scanner.Bytes()
+		logs.NewLogger(ctx, logs.KeyValueData{
+			"chunk": string(chunkBytes),
+		}).Debug("chunk")
+
+		var chunk GenerateResponse
+		if err := json.Unmarshal(chunkBytes, &chunk); err != nil {
+			return fmt.Errorf("unmarshalling chunk: %w", err)
+		}
+
+		ch <- chunk.Response
+		if chunk.Done {
+			break
+		}
+	}
+
+	return nil
 }
 
 func (c *client) GenerateFunc(ctx context.Context, prompt string, opts ...GenerationOption) (*GenerateResponse, error) {
