@@ -23,24 +23,30 @@ var (
 		return lipgloss.NewStyle().BorderStyle(b).Padding(1, 2)
 	}()
 	contentReaderViewportStyle = lipgloss.NewStyle().
-		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("62")).
-		Padding(1, 2)
+					BorderStyle(lipgloss.RoundedBorder()).
+					BorderForeground(lipgloss.Color("62")).
+					Padding(1, 2)
 	contentReaderMenuStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#626262")).
-		Padding(1, 2)
-	contentReaderLinkStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("10")). // Cyan color
-		Underline(true)
+				Foreground(lipgloss.Color("#626262")).
+				Padding(1, 2)
+	contentReaderLinkStyle                                   = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("10")). // Cyan color
+				Underline(true)
+	contentReaderQuestionStyle                                   = lipgloss.NewStyle().
+					Foreground(lipgloss.Color("63")). // Cy
+					Bold(true).
+					Padding(1, 2)
 )
 
 type contentReaderModel struct {
-	vp    viewport.Model
-	title string
-	link  string
-	pages []model.Article
-	idx   int
-	ctx   context.Context
+	vp       viewport.Model
+	pages    []*model.SearchResult
+	ctx      context.Context
+	question string
+	title    string
+	link     string
+	score    float32
+	idx      int
 }
 
 func (m *contentReaderModel) Init() tea.Cmd {
@@ -49,16 +55,19 @@ func (m *contentReaderModel) Init() tea.Cmd {
 
 func (m *contentReaderModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
+	var cmdVP tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c":
 			return m, tea.Quit
 		case tea.KeyLeft.String():
+			m.vp, cmdVP = m.vp.Update(tea.KeyLeft)
 			if m.idx > 0 {
 				m.idx--
 			}
 		case tea.KeyRight.String():
+			m.vp, cmdVP = m.vp.Update(tea.KeyRight)
 			if m.idx < len(m.pages)-1 {
 				m.idx++
 			}
@@ -67,41 +76,59 @@ func (m *contentReaderModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.vp.Width = screenMaxUIWidth(msg.Width)
 		m.vp.Height = contentReaderViewportMaxHeight(msg.Height)
 	}
-	m.vp.SetContent(m.Content())
-	m.link = m.pages[m.idx].Link
-	m.title = m.Title()
-	var cmdVP tea.Cmd
-	m.vp, cmdVP = m.vp.Update(msg)
+
+	m.refreshContent()
+	m.refreshTitle()
+	m.refreshLink()
+	m.refreshSimilarityScore()
+	if cmdVP != nil {
+		var cmdVPAux tea.Cmd
+		m.vp, cmdVPAux = m.vp.Update(msg)
+		cmdVP = tea.Batch(cmdVP, cmdVPAux)
+	} else {
+		m.vp, cmdVP = m.vp.Update(msg)
+	}
 	return m, tea.Batch(cmdVP, cmd)
 }
 
 func (m *contentReaderModel) View() string {
-	return contentReaderTitleStyle.Render(m.title) +
-		"\n\n" +
+	return contentReaderQuestionStyle.Render("Question: "+m.question) +
+		"\n" +
+		contentReaderTitleStyle.Render(m.title) +
+		"\n" +
 		contentReaderViewportStyle.Render(m.vp.View()) +
 		"\n" +
-		"Article source: " + contentReaderLinkStyle.Render(m.link) + "\n" +
+		"Article source: " + contentReaderLinkStyle.Render(m.link) +
+		"\n" +
+		"Similarity score: " + contentReaderLinkStyle.Render(fmt.Sprintf("%.2f", m.score)) + "/1" +
 		"\n" +
 		contentReaderMenuStyle.Render("Press q / ctrl+c to exit, ←/→ to navigate through articles, ↑/↓ to scroll")
 }
 
-func (m *contentReaderModel) Title() string {
+func (m *contentReaderModel) refreshTitle() {
 	page := " (" + strconv.Itoa(m.idx+1) + " of " + strconv.Itoa(len(m.pages)) + ")"
-	title := m.pages[m.idx].Title
+	title := m.pages[m.idx].Article.Title
 	pad := strings.Repeat(" ", m.vp.Width-(len(title)+len(page)))
-	return title + pad + page
+	m.title = title + pad + page
 }
 
-func (m *contentReaderModel) Content() string {
-	article, err := htmltomarkdown.ConvertString("<!DOCTYPE html><html><body>" + m.pages[m.idx].Content + "</body></html>")
+func (m *contentReaderModel) refreshContent() {
+	article, err := htmltomarkdown.ConvertString("<!DOCTYPE html><html><body>" + m.pages[m.idx].Article.Content + "</body></html>")
 	if err != nil {
-		article = m.pages[m.idx].Content
+		article = m.pages[m.idx].Article.Content
 	}
-	return lineWrap(article, m.vp.Width)
-
+	m.vp.SetContent(lineWrap(article, m.vp.Width))
 }
 
-func newContentReaderModel(ctx context.Context, articles []model.Article) *contentReaderModel {
+func (m *contentReaderModel) refreshLink() {
+	m.link = m.pages[m.idx].Article.Link
+}
+
+func (m *contentReaderModel) refreshSimilarityScore() {
+	m.score = m.pages[m.idx].Similarity
+}
+
+func newContentReaderModel(ctx context.Context, articles []*model.SearchResult, question string) *contentReaderModel {
 	width, height, err := term.GetSize(int(os.Stdout.Fd()))
 	if err != nil {
 		fmt.Println("Failed getting terminal size:", err)
@@ -111,17 +138,21 @@ func newContentReaderModel(ctx context.Context, articles []model.Article) *conte
 	vp := viewport.New(screenMaxUIWidth(width), contentReaderViewportMaxHeight(height))
 	vp.SetContent("")
 	return &contentReaderModel{
-		ctx:   ctx,
-		pages: articles,
+		ctx:      ctx,
+		pages:    articles,
+		question: question,
 	}
 }
 
 func contentReaderViewportMaxHeight(height int) int {
-	return height - 15
+	return height - 16
 }
 
-func ContentReader(ctx context.Context, articles []model.Article) error {
-	m := newContentReaderModel(ctx, articles)
+func ContentReader(ctx context.Context, articles []*model.SearchResult, question string) error {
+	if len(articles) == 0 {
+		return fmt.Errorf("article list is empty")
+	}
+	m := newContentReaderModel(ctx, articles, question)
 	p := tea.NewProgram(m)
 	_, err := p.Run()
 	return err

@@ -20,14 +20,13 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		a, err := adapter.NewDefaultAdapter()
+		a, err := adapter.NewFeedAdapterFromConfigs()
 		if err != nil {
 			err := fmt.Errorf("creating adapter: %w", err)
 			fmt.Printf("failed to create adapter: %s\n", err)
 			return err
 		}
 		if cmdRefreshOpts.interactive {
-			a, err := adapter.NewDefaultAdapter()
 			if err != nil {
 				err := fmt.Errorf("creating adapter: %w", err)
 				fmt.Printf("failed to create adapter: %s\n", err)

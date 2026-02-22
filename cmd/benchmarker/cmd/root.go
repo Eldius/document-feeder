@@ -40,7 +40,7 @@ to quickly create a Cobra application.`,
 		),
 	),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		c, err := adapter.NewBenchmarkFromConfig()
+		c, err := adapter.NewBenchmarkFromConfigs()
 		if err != nil {
 			return err
 		}

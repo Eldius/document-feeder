@@ -17,7 +17,7 @@ Feeds are added using their URL.
 Example: feed add https://www.heise.de/news/rss/heise-newsfeed.xml.
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		a, err := adapter.NewDefaultAdapter()
+		a, err := adapter.NewFeedAdapterFromConfigs()
 		if err != nil {
 			err := fmt.Errorf("creating adapter: %w", err)
 			fmt.Printf("failed to create adapter: %s\n", err)

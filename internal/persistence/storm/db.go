@@ -3,12 +3,18 @@ package storm
 import (
 	"context"
 	"fmt"
+	"go.etcd.io/bbolt"
 	"os"
+	"time"
 
 	"github.com/asdine/storm/v3"
 	"github.com/asdine/storm/v3/q"
 	"github.com/eldius/document-feeder/internal/model"
 	"github.com/eldius/initial-config-go/logs"
+)
+
+const (
+	dbFileMode = 0766
 )
 
 type Repository interface {
@@ -18,21 +24,33 @@ type Repository interface {
 	ArticleByLink(context.Context, string, string) (*model.Article, error)
 	SaveGeneratedCache(context.Context, *model.AnswerCache) error
 	FindGeneratedCache(context.Context, string) (*model.AnswerCache, error)
+	Delete(context.Context, *model.Feed) error
 }
 
 type repository struct {
 	db *storm.DB
 }
 
-func NewRepository() Repository {
-	_ = os.MkdirAll("data", 0766)
-	db, err := storm.Open("data/feeds.db")
+func NewRepositoryFromDB(db *storm.DB) (Repository, error) {
+	return &repository{db: db}, nil
+}
+
+func NewRepository() (Repository, error) {
+
+	_ = os.MkdirAll("data", dbFileMode)
+	db, err := storm.Open(
+		"data/feeds.db",
+		storm.BoltOptions(dbFileMode, &bbolt.Options{
+			Timeout: 3 * time.Second,
+		}),
+		storm.Batch(),
+	)
 	if err != nil {
 		err := fmt.Errorf("opening db: %w", err)
 		fmt.Println("Failed opening db:", err)
-		panic(err)
+		return nil, err
 	}
-	return &repository{db: db}
+	return NewRepositoryFromDB(db)
 }
 
 func (r *repository) Close() error {
@@ -84,4 +102,8 @@ func (r *repository) FindGeneratedCache(_ context.Context, id string) (*model.An
 		return nil, fmt.Errorf("finding generated cache: %w", err)
 	}
 	return &answer, nil
+}
+
+func (r *repository) Delete(_ context.Context, feed *model.Feed) error {
+	return r.db.DeleteStruct(feed)
 }

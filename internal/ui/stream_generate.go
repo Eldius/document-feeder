@@ -159,7 +159,7 @@ func RunStreamApp(ctx context.Context, question string) error {
 		}
 	})
 
-	a, err := adapter.NewDefaultAdapter()
+	a, err := adapter.NewFeedAdapterFromConfigs()
 	if err != nil {
 		return fmt.Errorf("creating adapter: %w", err)
 	}

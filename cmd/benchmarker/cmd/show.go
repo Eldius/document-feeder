@@ -12,7 +12,7 @@ var showCmd = &cobra.Command{
 	Short: "Display benchmark results for a given models",
 	Long:  `Display benchmark results for a given models.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		a, err := adapter.NewBenchmarkFromConfig()
+		a, err := adapter.NewBenchmarkFromConfigs()
 		if err != nil {
 			panic(err)
 		}

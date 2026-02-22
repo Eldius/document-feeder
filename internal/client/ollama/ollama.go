@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/eldius/initial-config-go/logs"
+	"github.com/eldius/initial-config-go/telemetry"
+	"go.opentelemetry.io/otel/metric"
 	"net/http"
 
 	"github.com/eldius/document-feeder/internal/config"
@@ -29,26 +31,56 @@ type Client interface {
 }
 
 type client struct {
-	c                  *http.Client
-	endpoint           string
-	embeddingModel     string
-	embeddingBatchSize int
-	generationModel    string
+	c                     *http.Client
+	endpoint              string
+	embeddingModelName    string
+	embeddingChunkSize    int
+	generationModelName   string
+	meter                 metric.Meter
+	promptTokenCounter    metric.Int64Counter
+	generatedTokenCounter metric.Int64Counter
 }
 
-func NewOllamaClient() Client {
+func NewOllamaClientFromConfigs() (Client, error) {
+	meter := telemetry.GetMeter("ollama")
+	tokenCountMeter, err := meter.Int64Counter("prompt_token_count", metric.WithDescription(""))
+	if err != nil {
+		err = fmt.Errorf("creating token count meter: %w", err)
+		return nil, err
+	}
+	tokenGenerateCounter, err := meter.Int64Counter("generated_token_count", metric.WithDescription(""))
+	if err != nil {
+		err = fmt.Errorf("creating token generate meter: %w", err)
+		return nil, err
+	}
+	return NewOllamaClient(
+		httpclient.NewHTTPClient(),
+		config.GetOllamaEndpoint(),
+		config.GetOllamaEmbeddingModel(),
+		config.GetOllamaGenerationModel(),
+		meter,
+		tokenCountMeter,
+		tokenGenerateCounter,
+		config.GetOllamaEmbeddingChunkSize(),
+	), nil
+}
+
+func NewOllamaClient(c *http.Client, endpoint, embeddingModel, generationModel string, meter metric.Meter, tokenCounter, tokenGenerateCounter metric.Int64Counter, embeddingChunkSize int) Client {
 	return &client{
-		c:                  httpclient.NewHTTPClient(),
-		endpoint:           config.GetOllamaEndpoint(),
-		embeddingModel:     config.GetOllamaEmbeddingModel(),
-		embeddingBatchSize: config.GetOllamaEmbeddingChunkSize(),
-		generationModel:    config.GetOllamaGenerationModel(),
+		c:                     c,
+		endpoint:              endpoint,
+		embeddingModelName:    embeddingModel,
+		generationModelName:   generationModel,
+		embeddingChunkSize:    embeddingChunkSize,
+		meter:                 meter,
+		promptTokenCounter:    tokenCounter,
+		generatedTokenCounter: tokenGenerateCounter,
 	}
 }
 
 func (c *client) EmbeddingFuncSingleShot(ctx context.Context, text string) ([]float32, error) {
 	res, err := c.EmbeddingCall(ctx, EmbeddingRequest{
-		Model:     c.embeddingModel,
+		Model:     c.embeddingModelName,
 		Input:     []string{text},
 		KeepAlive: 0,
 	})
@@ -60,7 +92,7 @@ func (c *client) EmbeddingFuncSingleShot(ctx context.Context, text string) ([]fl
 
 func (c *client) EmbeddingFuncKeepAlive(ctx context.Context, text string) ([]float32, error) {
 	res, err := c.EmbeddingCall(ctx, EmbeddingRequest{
-		Model:     c.embeddingModel,
+		Model:     c.embeddingModelName,
 		Input:     []string{text},
 		KeepAlive: 0,
 	})
@@ -72,7 +104,7 @@ func (c *client) EmbeddingFuncKeepAlive(ctx context.Context, text string) ([]flo
 
 func (c *client) EmbeddingFunc(ctx context.Context, text string) ([]float32, error) {
 	res, err := c.EmbeddingCall(ctx, EmbeddingRequest{
-		Model: c.embeddingModel,
+		Model: c.embeddingModelName,
 		Input: []string{text},
 	})
 	if err != nil {
@@ -110,7 +142,7 @@ func (c *client) ChatFunc(ctx context.Context, prompt string, think bool, opts .
 	}
 
 	reqPayload := ChatRequest{
-		Model: c.generationModel,
+		Model: c.generationModelName,
 		Messages: []ChatMessage{{
 			Role:    "user",
 			Content: prompt,
@@ -145,7 +177,7 @@ func (c *client) ChatFunc(ctx context.Context, prompt string, think bool, opts .
 func (c *client) GenerateCall(ctx context.Context, reqPayload GenerateRequest) (*GenerateResponse, error) {
 	reqPayload.Stream = false
 	if reqPayload.Model == "" {
-		reqPayload.Model = c.generationModel
+		reqPayload.Model = c.generationModelName
 	}
 
 	b, err := json.Marshal(reqPayload)
@@ -167,13 +199,16 @@ func (c *client) GenerateCall(ctx context.Context, reqPayload GenerateRequest) (
 	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
 		return nil, fmt.Errorf("decoding response: %w", err)
 	}
+
+	c.promptTokenCounter.Add(ctx, response.PromptEvalCount)
+
 	return &response, nil
 }
 
 func (c *client) GenerateCallStream(ctx context.Context, ch chan string, reqPayload GenerateRequest) error {
 	reqPayload.Stream = true
 	if reqPayload.Model == "" {
-		reqPayload.Model = c.generationModel
+		reqPayload.Model = c.generationModelName
 	}
 
 	b, err := json.Marshal(reqPayload)
@@ -219,7 +254,7 @@ func (c *client) GenerateFunc(ctx context.Context, prompt string, opts ...Genera
 	}
 
 	return c.GenerateCall(ctx, GenerateRequest{
-		Model:   c.generationModel,
+		Model:   c.generationModelName,
 		Prompt:  prompt,
 		Stream:  false,
 		Options: options,

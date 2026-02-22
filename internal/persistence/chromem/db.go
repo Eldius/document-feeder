@@ -28,9 +28,12 @@ const (
 
 type DocumentVectorizer interface {
 	Search(ctx context.Context, term string, maxResults int) ([]chromem.Result, error)
+	SearchWithSimilarityFilter(ctx context.Context, term string, maxResults int, similarity float32) ([]chromem.Result, error)
 	Save(ctx context.Context, feed *model.Feed) error
 	SaveGenerationCache(ctx context.Context, cache *model.AnswerCache) (string, error)
-	FindCacheID(ctx context.Context, question string, similarityThreshold float32) (string, error)
+	FindCacheID(ctx context.Context, question string) (string, error)
+	DeleteByFeedLink(ctx context.Context, feedLink string) error
+	Delete(ctx context.Context, ids ...string) error
 }
 
 type vectorizer struct {
@@ -88,7 +91,10 @@ func NewDefaultDocumentVectorizer() (DocumentVectorizer, error) {
 		textsplitter.WithChunkOverlap(config.GetOllamaEmbeddingChunkOverlap()),
 	)
 
-	ollamaClient := ollama.NewOllamaClient()
+	ollamaClient, err := ollama.NewOllamaClientFromConfigs()
+	if err != nil {
+		return nil, fmt.Errorf("creating ollama client: %w", err)
+	}
 	return NewDocumentVectorizer(
 		db,
 		splitter,
@@ -158,6 +164,7 @@ func (d *vectorizer) Save(ctx context.Context, feed *model.Feed) error {
 			md := maps.Clone(metadata)
 			chunkID := fmt.Sprintf("%.0000d-", i) + article.Link
 			md["chunk_id"] = chunkID
+			md["score"] = fmt.Sprintf("%.3f", doc.Score)
 			docs = append(docs, chromem.Document{
 				ID:       chunkID + article.Link,
 				Metadata: md,
@@ -190,7 +197,7 @@ func (d *vectorizer) SaveGenerationCache(ctx context.Context, cache *model.Answe
 	return id, nil
 }
 
-func (d *vectorizer) FindCacheID(ctx context.Context, question string, similarityThreshold float32) (string, error) {
+func (d *vectorizer) FindCacheID(ctx context.Context, question string) (string, error) {
 	queryResults, err := d.answersCollection.Query(ctx, question, 1, nil, nil)
 	if err != nil {
 		return "", fmt.Errorf("querying documents: %w", err)
@@ -199,6 +206,20 @@ func (d *vectorizer) FindCacheID(ctx context.Context, question string, similarit
 		return "", nil
 	}
 	return queryResults[0].ID, nil
+}
+
+func (d *vectorizer) SearchWithSimilarityFilter(ctx context.Context, term string, maxResults int, similarity float32) ([]chromem.Result, error) {
+	docs, err := d.Search(ctx, term, maxResults)
+	if err != nil {
+		return nil, err
+	}
+	var filteredDocs []chromem.Result
+	for _, doc := range docs {
+		if doc.Similarity >= similarity {
+			filteredDocs = append(filteredDocs, doc)
+		}
+	}
+	return filteredDocs, nil
 }
 
 func (d *vectorizer) htmlParse(ctx context.Context, article model.Article) ([]schema.Document, error) {
@@ -214,4 +235,34 @@ func cacheID(cache *model.AnswerCache) string {
 	h.Write([]byte(cache.Question))
 	h.Write([]byte(cache.Answer))
 	return hex.EncodeToString(h.Sum(nil))
+}
+
+func (d *vectorizer) DeleteByFeedLink(ctx context.Context, feedLink string) error {
+	docs, err := d.docsCollection.QueryWithOptions(ctx, chromem.QueryOptions{
+		QueryText:      "a",
+		QueryEmbedding: make([]float32, 0),
+		NResults:       1000,
+		Where: map[string]string{
+			"feed_link": feedLink,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("querying documents for deletion: %w", err)
+	}
+	var ids []string
+	for _, doc := range docs {
+		fmt.Println("-", doc.ID)
+		ids = append(ids, doc.ID)
+	}
+	if err := d.Delete(ctx, ids...); err != nil {
+		return fmt.Errorf("deleting documents: %w", err)
+	}
+	return err
+}
+
+func (d *vectorizer) Delete(ctx context.Context, ids ...string) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	return d.docsCollection.Delete(ctx, nil, nil, ids...)
 }

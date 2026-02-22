@@ -5,7 +5,7 @@ import (
 	"embed"
 	"fmt"
 	"github.com/eldius/initial-config-go/logs"
-	"slices"
+	chromem2 "github.com/philippgille/chromem-go"
 	"strings"
 	"text/template"
 
@@ -44,8 +44,11 @@ func NewFeedAdapter(r storm.Repository, p feed.Parser, docs chromem.DocumentVect
 	}
 }
 
-func NewDefaultAdapter() (*FeedAdapter, error) {
-	r := storm.NewRepository()
+func NewFeedAdapterFromConfigs() (*FeedAdapter, error) {
+	r, err := storm.NewRepository()
+	if err != nil {
+		return nil, fmt.Errorf("creating repository: %w", err)
+	}
 	p := feed.NewParser()
 	d, err := chromem.NewDefaultDocumentVectorizer()
 	if err != nil {
@@ -55,7 +58,10 @@ func NewDefaultAdapter() (*FeedAdapter, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parsing templates: %w", err)
 	}
-	o := ollama.NewOllamaClient()
+	o, err := ollama.NewOllamaClientFromConfigs()
+	if err != nil {
+		return nil, fmt.Errorf("creating ollama client: %w", err)
+	}
 	cacheEnabled := config.GetOllamaGenerationCacheEnabled()
 	cacheSimilarityThreshold := config.GetOllamaGenerationCacheSimilarityThreshold()
 	return NewFeedAdapter(r, p, d, o, tmpl, cacheSimilarityThreshold, cacheEnabled), nil
@@ -114,47 +120,70 @@ func (a *FeedAdapter) All(ctx context.Context) ([]*model.Feed, error) {
 	return a.r.All(ctx)
 }
 
+func (a *FeedAdapter) SearchWithSimilarityThreshold(ctx context.Context, term string, maxResults int, similarity float32) ([]*model.SearchResult, error) {
+	docs, err := a.docs.SearchWithSimilarityFilter(ctx, term, maxResults, similarity)
+	if err != nil {
+		return nil, fmt.Errorf("searching documents: %w", err)
+	}
+
+	var res model.SearchResultList
+	for _, d := range docs {
+		sr, err := a.documentReverseSearch(ctx, d)
+		if err != nil {
+			return nil, fmt.Errorf("searching documents: %w", err)
+		}
+		res.Results = append(res.Results, sr)
+	}
+
+	return res.Sorted(), nil
+}
+
 func (a *FeedAdapter) Search(ctx context.Context, term string, maxResults int) ([]*model.SearchResult, error) {
 	docs, err := a.docs.Search(ctx, term, maxResults)
 	if err != nil {
 		return nil, fmt.Errorf("searching documents: %w", err)
 	}
 
-	var res []*model.SearchResult
+	var res model.SearchResultList
 	for _, d := range docs {
-		doc, err := a.r.ArticleByLink(ctx, d.Metadata["feed"], d.Metadata["link"])
+		sr, err := a.documentReverseSearch(ctx, d)
 		if err != nil {
-			return nil, fmt.Errorf("getting article by link: %w", err)
+			return nil, fmt.Errorf("searching documents: %w", err)
 		}
-		if doc == nil {
-			res = append(res, &model.SearchResult{
-				FeedTitle:        d.Metadata["feed"],
-				Similarity:       d.Similarity,
-				SanitizedContent: d.Content,
-				Embeddings:       d.Embedding,
-			})
-			continue
-		}
-		res = append(res, &model.SearchResult{
-			FeedTitle: d.Metadata["feed"],
-			Article: model.Article{
-				Title:           doc.Title,
-				Description:     doc.Description,
-				Content:         doc.Content,
-				Link:            doc.Link,
-				Published:       doc.Published,
-				PublishedParsed: doc.PublishedParsed,
-				Authors:         doc.Authors,
-			},
+		res.Results = append(res.Results, sr)
+	}
+
+	return res.Sorted(), nil
+}
+
+func (a *FeedAdapter) documentReverseSearch(ctx context.Context, d chromem2.Result) (*model.SearchResult, error) {
+	doc, err := a.r.ArticleByLink(ctx, d.Metadata["feed"], d.Metadata["link"])
+	if err != nil {
+		return nil, fmt.Errorf("getting article by link: %w", err)
+	}
+	if doc == nil {
+		return &model.SearchResult{
+			FeedTitle:        d.Metadata["feed"],
 			Similarity:       d.Similarity,
 			SanitizedContent: d.Content,
 			Embeddings:       d.Embedding,
-		})
+		}, nil
 	}
-
-	return slices.SortedFunc(slices.Values(res), func(e *model.SearchResult, e2 *model.SearchResult) int {
-		return int(e2.Similarity) - int(e.Similarity)
-	}), nil
+	return &model.SearchResult{
+		FeedTitle: d.Metadata["feed"],
+		Article: model.Article{
+			Title:           doc.Title,
+			Description:     doc.Description,
+			Content:         doc.Content,
+			Link:            doc.Link,
+			Published:       doc.Published,
+			PublishedParsed: doc.PublishedParsed,
+			Authors:         doc.Authors,
+		},
+		Similarity:       d.Similarity,
+		SanitizedContent: d.Content,
+		Embeddings:       d.Embedding,
+	}, nil
 }
 
 type promptTemplateData struct {
@@ -164,7 +193,7 @@ type promptTemplateData struct {
 
 func (a *FeedAdapter) AskAQuestion(ctx context.Context, question string) (string, error) {
 	if a.cacheEnabled {
-		cacheID, err := a.docs.FindCacheID(ctx, question, a.cacheSimilarityThreshold)
+		cacheID, err := a.docs.FindCacheID(ctx, question)
 		if err == nil && cacheID != "" {
 			cache, err := a.r.FindGeneratedCache(ctx, cacheID)
 			if err != nil {
@@ -215,7 +244,7 @@ func (a *FeedAdapter) AskAQuestion(ctx context.Context, question string) (string
 
 func (a *FeedAdapter) AskAQuestionStream(ctx context.Context, question string, ch chan string) error {
 	if a.cacheEnabled {
-		cacheID, err := a.docs.FindCacheID(ctx, question, a.cacheSimilarityThreshold)
+		cacheID, err := a.docs.FindCacheID(ctx, question)
 		if err == nil && cacheID != "" {
 			cache, err := a.r.FindGeneratedCache(ctx, cacheID)
 			if err == nil {
@@ -248,5 +277,55 @@ func (a *FeedAdapter) AskAQuestionStream(ctx context.Context, question string, c
 		return fmt.Errorf("generating response: %w", err)
 	}
 
+	return nil
+}
+
+func (a *FeedAdapter) SanitizeArticlesDB(ctx context.Context) error {
+	feeds, err := a.r.All(ctx)
+	if err != nil {
+		return fmt.Errorf("getting all feeds: %w", err)
+	}
+	for _, f := range feeds {
+		log := logs.NewLogger(ctx).WithExtraData("feed", f.FeedLink)
+		if strings.TrimSpace(f.FeedLink) == "" {
+			if err := a.deleteFeed(ctx, f); err != nil {
+				log.WithError(err).WithExtraData("feed", f.FeedLink).Warn("deleting feed with empty feed link")
+				return err
+			}
+			log.Debug("deleted feed with empty title")
+			continue
+		}
+
+		if strings.TrimSpace(f.Title) == "" {
+			if err := a.deleteFeed(ctx, f); err != nil {
+				log.WithError(err).WithExtraData("feed", f.FeedLink).Warn("deleting feed with empty title")
+				return err
+			}
+			if err := a.deleteFeedEmbeddings(ctx, f); err != nil {
+				log.WithError(err).WithExtraData("feed", f.FeedLink).Warn("deleting embeddings for feed with empty title")
+				return err
+			}
+			log.Warn("deleted feed with empty title")
+		}
+		if err := a.r.Persist(ctx, f); err != nil {
+			return fmt.Errorf("persisting feed: %w", err)
+		}
+	}
+	return nil
+}
+
+func (a *FeedAdapter) deleteFeedEmbeddings(ctx context.Context, f *model.Feed) error {
+	if err := a.docs.DeleteByFeedLink(ctx, f.FeedLink); err != nil {
+		err = fmt.Errorf("deleting embeddings for feed: %w", err)
+		return err
+	}
+	return nil
+}
+
+func (a *FeedAdapter) deleteFeed(ctx context.Context, f *model.Feed) error {
+	if err := a.r.Delete(ctx, f); err != nil {
+		err = fmt.Errorf("deleting feeds: %w", err)
+		return err
+	}
 	return nil
 }

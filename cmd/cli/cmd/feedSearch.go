@@ -25,31 +25,32 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		a, err := adapter.NewDefaultAdapter()
+		a, err := adapter.NewFeedAdapterFromConfigs()
 		if err != nil {
 			err := fmt.Errorf("creating adapter: %w", err)
 			fmt.Printf("failed to create adapter: %s\n", err)
 			return err
 		}
 		fmt.Println("searching feeds")
-		res, err := a.Search(cmd.Context(), strings.Join(args, " "), feedSearchOpts.maxResults)
-		if err != nil {
-			err := fmt.Errorf("searching feeds: %w", err)
-			fmt.Printf("failed to search feeds: %s\n", err)
-			return err
+		var res []*model.SearchResult
+		question := strings.Join(args, " ")
+		if feedSearchOpts.similarityThreshold == 0 {
+			res, err = a.Search(cmd.Context(), question, feedSearchOpts.maxResults)
+			if err != nil {
+				err := fmt.Errorf("searching feeds: %w", err)
+				fmt.Printf("failed to search feeds: %s\n", err)
+				return err
+			}
+		} else {
+			res, err = a.SearchWithSimilarityThreshold(cmd.Context(), question, feedSearchOpts.maxResults, feedSearchOpts.similarityThreshold)
+			if err != nil {
+				err := fmt.Errorf("searching feeds: %w", err)
+				fmt.Printf("failed to search feeds: %s\n", err)
+				return err
+			}
 		}
 
-		var articles []model.Article
-		for _, a := range res {
-			articles = append(articles, a.Article)
-		}
-
-		//if err := ui.ArticleReaderScreen(cmd.Context(), articles); err != nil {
-		//	err := fmt.Errorf("reading articles: %w", err)
-		//	fmt.Printf("failed to read articles: %s\n", err)
-		//	return err
-		//}
-		if err := ui.ContentReader(cmd.Context(), articles); err != nil {
+		if err := ui.ContentReader(cmd.Context(), res, question); err != nil {
 			fmt.Printf("failed to read articles: %s\n", err)
 			return err
 		}
@@ -60,7 +61,8 @@ to quickly create a Cobra application.`,
 
 var (
 	feedSearchOpts struct {
-		maxResults int
+		maxResults          int
+		similarityThreshold float32
 	}
 )
 
@@ -68,4 +70,5 @@ func init() {
 	feedCmd.AddCommand(feedSearchCmd)
 
 	feedSearchCmd.Flags().IntVarP(&feedSearchOpts.maxResults, "max-results", "m", 10, "max results to return")
+	feedSearchCmd.Flags().Float32VarP(&feedSearchOpts.similarityThreshold, "similarity-threshold", "s", 0, "similarity threshold")
 }

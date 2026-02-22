@@ -96,3 +96,7 @@ func PersistConfig() error {
 
 	return viper.WriteConfig()
 }
+
+func GetFetchConfigStruct(key string, val any) error {
+	return viper.UnmarshalKey(key, &val)
+}

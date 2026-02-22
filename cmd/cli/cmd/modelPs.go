@@ -16,7 +16,12 @@ var modelPsCmd = &cobra.Command{
 	Long:  `List running models.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		c := ollama.NewOllamaClient()
+		c, err := ollama.NewOllamaClientFromConfigs()
+		if err != nil {
+			err := fmt.Errorf("creating ollama client: %w", err)
+			fmt.Printf("failed to create ollama client: %s\n", err)
+			return err
+		}
 		models, err := c.RunningModels(cmd.Context())
 		if err != nil {
 			err := fmt.Errorf("listing models: %w", err)

@@ -1,6 +1,19 @@
 package model
 
-import "time"
+import (
+	"slices"
+	"time"
+)
+
+type SearchResultList struct {
+	Results []*SearchResult `json:"results"`
+}
+
+func (r *SearchResultList) Sorted() []*SearchResult {
+	return slices.SortedFunc(slices.Values(r.Results), func(e *SearchResult, e2 *SearchResult) int {
+		return int(e2.Similarity) - int(e.Similarity)
+	})
+}
 
 type SearchResult struct {
 	FeedTitle string `json:"feedTitle"`

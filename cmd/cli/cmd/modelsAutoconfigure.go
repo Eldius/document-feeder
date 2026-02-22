@@ -14,7 +14,12 @@ var modelsAutoconfigureCmd = &cobra.Command{
 	Short: "Fetch model definitions and set configuration patterns for this model",
 	Long:  `Fetch model definitions and set configuration patterns for this model.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		c := ollama.NewOllamaClient()
+		c, err := ollama.NewOllamaClientFromConfigs()
+		if err != nil {
+			err := fmt.Errorf("creating ollama client: %w", err)
+			fmt.Printf("failed to create ollama client: %s\n", err)
+			return err
+		}
 
 		res, err := c.ModelDetails(cmd.Context(), modelsAutoconfigureOpts.model)
 		if err != nil {

@@ -59,13 +59,17 @@ func NewBenchmark(c ollama.Client, db *tsdb.DB, iterCount int) *Benchmark {
 	return &Benchmark{c: c, db: db, iterCount: iterCount}
 }
 
-func NewBenchmarkFromConfig() (*Benchmark, error) {
+func NewBenchmarkFromConfigs() (*Benchmark, error) {
 	db, err := NewTSDB("data/tsdb.db")
 	if err != nil {
 		return nil, fmt.Errorf("opening TSDB: %w", err)
 	}
 
-	return NewBenchmark(ollama.NewOllamaClient(), db, 3), nil
+	c, err := ollama.NewOllamaClientFromConfigs()
+	if err != nil {
+		return nil, fmt.Errorf("creating Ollama client: %w", err)
+	}
+	return NewBenchmark(c, db, 3), nil
 }
 
 func (b *Benchmark) Generate(ctx context.Context, models []string) error {

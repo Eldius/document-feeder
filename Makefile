@@ -55,8 +55,35 @@ add:
 				--feed "https://computaria.gitlab.io/blog/feed.xml" \
 				--feed "https://www.dolthub.com/blog/rss.xml" \
 				--feed "https://blog.gaborkoos.com/feed.xml" \
-				--feed "https://antonz.org/feed.xml"
-
+				--feed "https://antonz.org/feed.xml" \
+				--feed "https://pt.globalvoices.org/feed/" \
+				--feed "http://agenciabrasil.ebc.com.br/rss/ultimasnoticias/feed.xml" \
+				--feed "https://agenciabrasil.ebc.com.br/radioagencia-nacional/rss/ultimasnoticias/feed.xml" \
+				--feed "http://agenciabrasil.ebc.com.br/rss/ultimasnoticias/feed.xml" \
+				--feed "http://agenciabrasil.ebc.com.br/rss/direitos-humanos/feed.xml" \
+				--feed "http://agenciabrasil.ebc.com.br/rss/economia/feed.xml" \
+				--feed "http://agenciabrasil.ebc.com.br/rss/educacao/feed.xml" \
+				--feed "http://agenciabrasil.ebc.com.br/rss/esportes/feed.xml" \
+				--feed "http://agenciabrasil.ebc.com.br/rss/geral/feed.xml" \
+				--feed "http://agenciabrasil.ebc.com.br/rss/internacional/feed.xml" \
+				--feed "http://agenciabrasil.ebc.com.br/rss/justica/feed.xml" \
+				--feed "http://agenciabrasil.ebc.com.br/rss/politica/feed.xml" \
+				--feed "http://agenciabrasil.ebc.com.br/rss/saude/feed.xml" \
+				--feed "https://agenciabrasil.ebc.com.br/rss/ultimasnoticias/parceiros/feed.xml" \
+				--feed "https://agenciabrasil.ebc.com.br/radioagencia-nacional/rss/ultimasnoticias/feed.xml" \
+				--feed "https://agenciabrasil.ebc.com.br/radioagencia-nacional/rss/cultura/feed.xml" \
+				--feed "https://agenciabrasil.ebc.com.br/radioagencia-nacional/rss/direitos-humanos/feed.xml" \
+				--feed "https://agenciabrasil.ebc.com.br/radioagencia-nacional/rss/economia/feed.xml" \
+				--feed "https://agenciabrasil.ebc.com.br/radioagencia-nacional/rss/educacao/feed.xml" \
+				--feed "https://agenciabrasil.ebc.com.br/radioagencia-nacional/rss/esportes/feed.xml" \
+				--feed "https://agenciabrasil.ebc.com.br/radioagencia-nacional/rss/geral/feed.xml" \
+				--feed "https://agenciabrasil.ebc.com.br/radioagencia-nacional/rss/internacional/feed.xml" \
+				--feed "https://agenciabrasil.ebc.com.br/radioagencia-nacional/rss/justica/feed.xml" \
+				--feed "https://agenciabrasil.ebc.com.br/radioagencia-nacional/rss/meio-ambiente/feed.xml" \
+				--feed "https://agenciabrasil.ebc.com.br/radioagencia-nacional/rss/pesquisa-e-inovacao/feed.xml" \
+				--feed "https://agenciabrasil.ebc.com.br/radioagencia-nacional/rss/politica/feed.xml" \
+				--feed "https://agenciabrasil.ebc.com.br/radioagencia-nacional/rss/saude/feed.xml" \
+				--feed "https://agenciabrasil.ebc.com.br/radioagencia-nacional/rss/seguranca/feed.xml"
 
 list:
 	go run \
@@ -76,7 +103,8 @@ search:
 	go run \
 		./cmd/cli \
 			feed \
-				search "explain how to debug a golang code from command line"
+				search \
+					"explain how to debug a golang code from command line"
 
 
 ask:
@@ -84,6 +112,12 @@ ask:
 		./cmd/cli \
 			ask \
 				"Explain the difference between supervised and unsupervised learning"
+
+
+sanitize:
+	go run \
+		./cmd/cli/ \
+			sanitize
 
 release:
 	go tool \
@@ -121,7 +155,7 @@ validate: test linter vulncheck
 	@echo "Validation completed!"
 
 test:
-	go test -cover ./...
+	go test ./... -coverage
 
 vulncheck:
 	go tool govulncheck ./...
