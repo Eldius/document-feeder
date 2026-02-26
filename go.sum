@@ -453,8 +453,8 @@ github.com/earthboundkid/versioninfo/v2 v2.24.1 h1:SJTMHaoUx3GzjjnUO1QzP3ZXK6Ee/
 github.com/earthboundkid/versioninfo/v2 v2.24.1/go.mod h1:VcWEooDEuyUJnMfbdTh0uFN4cfEIg+kHMuWB2CDCLjw=
 github.com/elazarl/goproxy v1.7.2 h1:Y2o6urb7Eule09PjlhQRGNsqRfPmYI3KKQLFpCAV3+o=
 github.com/elazarl/goproxy v1.7.2/go.mod h1:82vkLNir0ALaW14Rc399OTTjyNREgmdL2cVoIbS6XaE=
-github.com/eldius/initial-config-go v0.0.34 h1:+p5r9icL7Gb8RD1ob1LHDL5LvNZrdFbY+p3+xstVBg0=
-github.com/eldius/initial-config-go v0.0.34/go.mod h1:LzMgh2pBPhgK5XD4bSkC0bb7BM/MWBIqTUvqsgNTYc0=
+github.com/eldius/initial-config-go v0.0.35 h1:GNtD4Q4XL6//JVBHX+ha5mHOAzgr6/1jdpkmkPzNr8M=
+github.com/eldius/initial-config-go v0.0.35/go.mod h1:LzMgh2pBPhgK5XD4bSkC0bb7BM/MWBIqTUvqsgNTYc0=
 github.com/emicklei/go-restful/v3 v3.12.2 h1:DhwDP0vY3k8ZzE0RunuJy8GhNpPL6zqLkDf9B/a0/xU=
 github.com/emicklei/go-restful/v3 v3.12.2/go.mod h1:6n3XBCmQQb25CM2LCACGz8ukIrRry+4bhvbpWn3mrbc=
 github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=

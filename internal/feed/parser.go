@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/eldius/document-feeder/internal/model"
-	"github.com/eldius/initial-config-go/httpclient"
+	"github.com/eldius/initial-config-go/http/client"
 	"github.com/mmcdole/gofeed"
 	ext "github.com/mmcdole/gofeed/extensions"
 )
@@ -26,7 +26,7 @@ type feedParser struct {
 
 func NewParser() Parser {
 	p := gofeed.NewParser()
-	c := httpclient.NewHTTPClient()
+	c := client.NewHTTPClient()
 	return &feedParser{p: p, c: c}
 }
 

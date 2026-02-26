@@ -12,7 +12,7 @@ import (
 	"net/http"
 
 	"github.com/eldius/document-feeder/internal/config"
-	"github.com/eldius/initial-config-go/httpclient"
+	"github.com/eldius/initial-config-go/http/client"
 )
 
 type Client interface {
@@ -54,7 +54,7 @@ func NewOllamaClientFromConfigs() (Client, error) {
 		return nil, err
 	}
 	return NewOllamaClient(
-		httpclient.NewHTTPClient(),
+		client.NewHTTPClient(),
 		config.GetOllamaEndpoint(),
 		config.GetOllamaEmbeddingModel(),
 		config.GetOllamaGenerationModel(),
