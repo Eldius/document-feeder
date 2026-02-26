@@ -30,7 +30,7 @@ type Client interface {
 	GenerateCallStream(ctx context.Context, ch chan string, reqPayload GenerateRequest) error
 }
 
-type client struct {
+type ollamaClient struct {
 	c                     *http.Client
 	endpoint              string
 	embeddingModelName    string
@@ -66,7 +66,7 @@ func NewOllamaClientFromConfigs() (Client, error) {
 }
 
 func NewOllamaClient(c *http.Client, endpoint, embeddingModel, generationModel string, meter metric.Meter, tokenCounter, tokenGenerateCounter metric.Int64Counter, embeddingChunkSize int) Client {
-	return &client{
+	return &ollamaClient{
 		c:                     c,
 		endpoint:              endpoint,
 		embeddingModelName:    embeddingModel,
@@ -78,7 +78,7 @@ func NewOllamaClient(c *http.Client, endpoint, embeddingModel, generationModel s
 	}
 }
 
-func (c *client) EmbeddingFuncSingleShot(ctx context.Context, text string) ([]float32, error) {
+func (c *ollamaClient) EmbeddingFuncSingleShot(ctx context.Context, text string) ([]float32, error) {
 	res, err := c.EmbeddingCall(ctx, EmbeddingRequest{
 		Model:     c.embeddingModelName,
 		Input:     []string{text},
@@ -90,7 +90,7 @@ func (c *client) EmbeddingFuncSingleShot(ctx context.Context, text string) ([]fl
 	return res.Embeddings[0], err
 }
 
-func (c *client) EmbeddingFuncKeepAlive(ctx context.Context, text string) ([]float32, error) {
+func (c *ollamaClient) EmbeddingFuncKeepAlive(ctx context.Context, text string) ([]float32, error) {
 	res, err := c.EmbeddingCall(ctx, EmbeddingRequest{
 		Model:     c.embeddingModelName,
 		Input:     []string{text},
@@ -102,7 +102,7 @@ func (c *client) EmbeddingFuncKeepAlive(ctx context.Context, text string) ([]flo
 	return res.Embeddings[0], err
 }
 
-func (c *client) EmbeddingFunc(ctx context.Context, text string) ([]float32, error) {
+func (c *ollamaClient) EmbeddingFunc(ctx context.Context, text string) ([]float32, error) {
 	res, err := c.EmbeddingCall(ctx, EmbeddingRequest{
 		Model: c.embeddingModelName,
 		Input: []string{text},
@@ -113,7 +113,7 @@ func (c *client) EmbeddingFunc(ctx context.Context, text string) ([]float32, err
 	return res.Embeddings[0], err
 }
 
-func (c *client) EmbeddingCall(ctx context.Context, reqPayload EmbeddingRequest) (*EmbeddingResponse, error) {
+func (c *ollamaClient) EmbeddingCall(ctx context.Context, reqPayload EmbeddingRequest) (*EmbeddingResponse, error) {
 	b, err := json.Marshal(reqPayload)
 	if err != nil {
 		return nil, fmt.Errorf("marshalling request payload: %w", err)
@@ -135,7 +135,7 @@ func (c *client) EmbeddingCall(ctx context.Context, reqPayload EmbeddingRequest)
 	return &embeddings, nil
 }
 
-func (c *client) ChatFunc(ctx context.Context, prompt string, think bool, opts ...GenerationOption) (*ChatResponse, error) {
+func (c *ollamaClient) ChatFunc(ctx context.Context, prompt string, think bool, opts ...GenerationOption) (*ChatResponse, error) {
 	options := defaultOllamaGenerationOptions()
 	for _, opt := range opts {
 		opt(&options)
@@ -174,7 +174,7 @@ func (c *client) ChatFunc(ctx context.Context, prompt string, think bool, opts .
 	return &response, nil
 }
 
-func (c *client) GenerateCall(ctx context.Context, reqPayload GenerateRequest) (*GenerateResponse, error) {
+func (c *ollamaClient) GenerateCall(ctx context.Context, reqPayload GenerateRequest) (*GenerateResponse, error) {
 	reqPayload.Stream = false
 	if reqPayload.Model == "" {
 		reqPayload.Model = c.generationModelName
@@ -205,7 +205,7 @@ func (c *client) GenerateCall(ctx context.Context, reqPayload GenerateRequest) (
 	return &response, nil
 }
 
-func (c *client) GenerateCallStream(ctx context.Context, ch chan string, reqPayload GenerateRequest) error {
+func (c *ollamaClient) GenerateCallStream(ctx context.Context, ch chan string, reqPayload GenerateRequest) error {
 	reqPayload.Stream = true
 	if reqPayload.Model == "" {
 		reqPayload.Model = c.generationModelName
@@ -247,7 +247,7 @@ func (c *client) GenerateCallStream(ctx context.Context, ch chan string, reqPayl
 	return nil
 }
 
-func (c *client) GenerateFunc(ctx context.Context, prompt string, opts ...GenerationOption) (*GenerateResponse, error) {
+func (c *ollamaClient) GenerateFunc(ctx context.Context, prompt string, opts ...GenerationOption) (*GenerateResponse, error) {
 	options := defaultOllamaGenerationOptions()
 	for _, opt := range opts {
 		opt(&options)
@@ -261,7 +261,7 @@ func (c *client) GenerateFunc(ctx context.Context, prompt string, opts ...Genera
 	})
 }
 
-func (c *client) ListModels(ctx context.Context) (*ModelsResponse, error) {
+func (c *ollamaClient) ListModels(ctx context.Context) (*ModelsResponse, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint+"/api/tags", nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
@@ -280,7 +280,7 @@ func (c *client) ListModels(ctx context.Context) (*ModelsResponse, error) {
 	return &response, nil
 }
 
-func (c *client) RunningModels(ctx context.Context) (*ModelsResponse, error) {
+func (c *ollamaClient) RunningModels(ctx context.Context) (*ModelsResponse, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint+"/api/ps", nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
@@ -299,7 +299,7 @@ func (c *client) RunningModels(ctx context.Context) (*ModelsResponse, error) {
 	return &response, nil
 }
 
-func (c *client) ModelDetailsCall(ctx context.Context, payload ModelDetailsRequest) (*ModelDetailsResponse, error) {
+func (c *ollamaClient) ModelDetailsCall(ctx context.Context, payload ModelDetailsRequest) (*ModelDetailsResponse, error) {
 	b, err := json.Marshal(&payload)
 	if err != nil {
 		return nil, fmt.Errorf("marshalling request payload: %w", err)
@@ -323,6 +323,6 @@ func (c *client) ModelDetailsCall(ctx context.Context, payload ModelDetailsReque
 	return &response, nil
 }
 
-func (c *client) ModelDetails(ctx context.Context, model string) (*ModelDetailsResponse, error) {
+func (c *ollamaClient) ModelDetails(ctx context.Context, model string) (*ModelDetailsResponse, error) {
 	return c.ModelDetailsCall(ctx, ModelDetailsRequest{Model: model})
 }
