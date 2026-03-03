@@ -31,14 +31,22 @@ type Client interface {
 }
 
 type ollamaClient struct {
-	c                     *http.Client
-	endpoint              string
-	embeddingModelName    string
-	embeddingChunkSize    int
-	generationModelName   string
-	meter                 metric.Meter
-	promptTokenCounter    metric.Int64Counter
-	generatedTokenCounter metric.Int64Counter
+	c                   *http.Client
+	endpoint            string
+	embeddingModelName  string
+	embeddingChunkSize  int
+	generationModelName string
+	meters              meters
+}
+
+type meters struct {
+	meter                  metric.Meter
+	promptTokenCounter     metric.Int64Counter
+	generatedTokenCounter  metric.Int64Counter
+	generationErrorCounter metric.Int64Counter
+	embeddingsTokenCounter metric.Int64Counter
+	embeddedTokenCounter   metric.Int64Counter
+	embeddingsErrorCounter metric.Int64Counter
 }
 
 func NewOllamaClientFromConfigs() (Client, error) {
@@ -53,6 +61,26 @@ func NewOllamaClientFromConfigs() (Client, error) {
 		err = fmt.Errorf("creating token generate meter: %w", err)
 		return nil, err
 	}
+	generationErrorCounter, err := meter.Int64Counter("generated_token_count", metric.WithDescription(""))
+	if err != nil {
+		err = fmt.Errorf("creating token generate meter: %w", err)
+		return nil, err
+	}
+	embeddingsTokenCounter, err := meter.Int64Counter("generated_token_count", metric.WithDescription(""))
+	if err != nil {
+		err = fmt.Errorf("creating token generate meter: %w", err)
+		return nil, err
+	}
+	embeddedTokenCounter, err := meter.Int64Counter("generated_token_count", metric.WithDescription(""))
+	if err != nil {
+		err = fmt.Errorf("creating token generate meter: %w", err)
+		return nil, err
+	}
+	embeddingsErrorCounter, err := meter.Int64Counter("generated_token_count", metric.WithDescription(""))
+	if err != nil {
+		err = fmt.Errorf("creating token generate meter: %w", err)
+		return nil, err
+	}
 	return NewOllamaClient(
 		client.NewHTTPClient(),
 		config.GetOllamaEndpoint(),
@@ -61,20 +89,36 @@ func NewOllamaClientFromConfigs() (Client, error) {
 		meter,
 		tokenCountMeter,
 		tokenGenerateCounter,
+		generationErrorCounter,
+		embeddingsTokenCounter,
+		embeddedTokenCounter,
+		embeddingsErrorCounter,
 		config.GetOllamaEmbeddingChunkSize(),
 	), nil
 }
 
-func NewOllamaClient(c *http.Client, endpoint, embeddingModel, generationModel string, meter metric.Meter, tokenCounter, tokenGenerateCounter metric.Int64Counter, embeddingChunkSize int) Client {
+func NewOllamaClient(
+	c *http.Client, endpoint,
+	embeddingModel, generationModel string,
+	meter metric.Meter,
+	promptTokenCounter, generatedTokenCounter, generationErrorCounter, embeddingsTokenCounter, embeddedTokenCounter, embeddingsErrorCounter metric.Int64Counter,
+	embeddingChunkSize int,
+) Client {
 	return &ollamaClient{
-		c:                     c,
-		endpoint:              endpoint,
-		embeddingModelName:    embeddingModel,
-		generationModelName:   generationModel,
-		embeddingChunkSize:    embeddingChunkSize,
-		meter:                 meter,
-		promptTokenCounter:    tokenCounter,
-		generatedTokenCounter: tokenGenerateCounter,
+		c:                   c,
+		endpoint:            endpoint,
+		embeddingModelName:  embeddingModel,
+		generationModelName: generationModel,
+		embeddingChunkSize:  embeddingChunkSize,
+		meters: meters{
+			meter:                  meter,
+			promptTokenCounter:     promptTokenCounter,
+			generatedTokenCounter:  generatedTokenCounter,
+			embeddingsTokenCounter: embeddingsTokenCounter,
+			embeddedTokenCounter:   embeddedTokenCounter,
+			embeddingsErrorCounter: embeddingsErrorCounter,
+			generationErrorCounter: generationErrorCounter,
+		},
 	}
 }
 
@@ -200,7 +244,7 @@ func (c *ollamaClient) GenerateCall(ctx context.Context, reqPayload GenerateRequ
 		return nil, fmt.Errorf("decoding response: %w", err)
 	}
 
-	c.promptTokenCounter.Add(ctx, response.PromptEvalCount)
+	c.meters.promptTokenCounter.Add(ctx, response.PromptEvalCount)
 
 	return &response, nil
 }
