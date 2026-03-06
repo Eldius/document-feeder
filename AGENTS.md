@@ -26,7 +26,7 @@
 - `make release --snapshot`: build cross-platform artifacts into `dist/` with GoReleaser.
 
 ## Coding Style & Naming Conventions
-- Go 1.25.6; format with `gofmt` and imports via `goimports` (or `golangci-lint` defaults).
+- Go 1.26.0; format with `gofmt` and imports via `goimports` (or `golangci-lint` defaults).
 - Package names are lowercase and match folder names; exported identifiers are descriptive and avoid abbreviations.
 - CLI commands follow verb-first naming (e.g., `feed add`, `feed refresh`, `models ls`).
 
