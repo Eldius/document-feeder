@@ -7,7 +7,6 @@ tool (
 	golang.org/x/vuln/cmd/govulncheck
 )
 
-
 require (
 	charm.land/lipgloss/v2 v2.0.0-beta.3.0.20251120230642-dcccabe2cd63
 	github.com/JohannesKaufmann/html-to-markdown/v2 v2.5.0
@@ -15,7 +14,7 @@ require (
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
-	github.com/eldius/initial-config-go v0.0.39
+	github.com/eldius/initial-config-go v0.0.40
 	github.com/go-kit/log v0.2.1
 	github.com/mmcdole/gofeed v1.3.0
 	github.com/philippgille/chromem-go v0.7.0
