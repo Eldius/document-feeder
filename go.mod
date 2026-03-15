@@ -7,7 +7,6 @@ tool (
 	golang.org/x/vuln/cmd/govulncheck
 )
 
-replace github.com/eldius/initial-config-go => ../initial-config-go
 
 require (
 	charm.land/lipgloss/v2 v2.0.0-beta.3.0.20251120230642-dcccabe2cd63
