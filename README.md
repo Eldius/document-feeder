@@ -1,5 +1,7 @@
 # Document Feed Embedder
 
+![CI/CD](https://github.com/eldius/document-feeder/actions/workflows/ci.yml/badge.svg)
+
 A powerful CLI tool and Proof of Concept (POC) for managing knowledge bases from RSS and OPDS feeds using Retrieval-Augmented Generation (RAG). It leverages Ollama for local LLM processing and embeddings, and `chromem-go` for vector storage.
 
 ## Key Features
