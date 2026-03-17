@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/spf13/viper"
 	"os"
 	"time"
 
@@ -18,7 +19,7 @@ var rootCmd = &cobra.Command{
 	Long:  `A simple news feed tool.`,
 	PersistentPreRunE: setup.PersistentPreRunE(
 		"document-feeder",
-		setup.WithConfigFileToBeUsed(cfgFile),
+		setup.WithConfigFileToBeUsed(rootOpts.cfgFile),
 		setup.WithDefaultCfgFileLocations("~", ".config", "."),
 		setup.WithEnvPrefix("FEEDER"),
 		setup.WithDefaultCfgFileName("config"),
@@ -31,6 +32,11 @@ var rootCmd = &cobra.Command{
 			config.OllamaGenerationModelProp,
 			config.OllamaGenerationCacheEnabledProp,
 			config.OllamaGenerationNoCacheProp,
+			config.XmppNotifierURLProp,
+			config.XmppNotifierUserProp,
+			config.XmppNotifierPassProp,
+			config.XmppNotifierRecipientProp,
+			config.XmppNotifierEnabledProp,
 		),
 	),
 	PersistentPostRunE: setup.PersistentPostRunE(1 * time.Second),
@@ -46,7 +52,10 @@ func Execute() {
 }
 
 var (
-	cfgFile string
+	rootOpts struct {
+		enableNotification bool
+		cfgFile            string
+	}
 )
 
 func init() {
@@ -54,9 +63,8 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.document-feed-embedder.yaml)")
+	rootCmd.PersistentFlags().StringVar(&rootOpts.cfgFile, "config", "", "config file (default is $HOME/.document-feed-embedder.yaml)")
+	rootCmd.PersistentFlags().BoolVar(&rootOpts.enableNotification, "enable-notification", false, "Enable notification after execution")
+	_ = viper.BindPFlag(config.XmppNotifierEnabledProp.Key, rootCmd.PersistentFlags().Lookup("enable-notification"))
 
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

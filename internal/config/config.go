@@ -41,6 +41,25 @@ var (
 		Key:   "ollama.generation.cache_similarity_threshold",
 		Value: 0.8,
 	}
+	XmppNotifierURLProp = setup.Prop{
+		Key:   "xmpp.notifier.webhook_url",
+		Value: "",
+	}
+	XmppNotifierUserProp = setup.Prop{
+		Key:   "xmpp.notifier.user",
+		Value: "",
+	}
+	XmppNotifierPassProp = setup.Prop{
+		Key: "xmpp.notifier.pass",
+	}
+	XmppNotifierRecipientProp = setup.Prop{
+		Key:   "xmpp.notifier.recipient",
+		Value: "",
+	}
+	XmppNotifierEnabledProp = setup.Prop{
+		Key:   "xmpp.notifier.enabled",
+		Value: false,
+	}
 )
 
 func GetOllamaEndpoint() string {
@@ -81,6 +100,26 @@ func SetOllamaEmbeddingChunkSize(chunkSize int) {
 
 func SetOllamaEmbeddingChunkOverlap(chunkOverlap int) {
 	viper.Set(OllamaEmbeddingChunkOverlapProp.Key, chunkOverlap)
+}
+
+func GetXmppNotifierURL() string {
+	return viper.GetString(XmppNotifierURLProp.Key)
+}
+
+func GetXmppNotifierUser() string {
+	return viper.GetString(XmppNotifierUserProp.Key)
+}
+
+func GetXmppNotifierPass() string {
+	return viper.GetString(XmppNotifierPassProp.Key)
+}
+
+func GetXmppNotifierRecipient() string {
+	return viper.GetString(XmppNotifierRecipientProp.Key)
+}
+
+func GetXmppNotifierEnabled() bool {
+	return viper.GetBool(XmppNotifierEnabledProp.Key)
 }
 
 func PersistConfig() error {
