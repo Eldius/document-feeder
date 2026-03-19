@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/eldius/document-feeder/internal/adapter"
+	"github.com/eldius/document-feeder/internal/config"
 	"github.com/eldius/document-feeder/internal/ui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -60,6 +61,13 @@ var askCmd = &cobra.Command{
 		answerOut := "Answer: " + answer
 		fmt.Println(answerStyle.Render(answerOut))
 
+		fmt.Println("")
+		fmt.Println("")
+		fmt.Println("")
+		fmt.Println("---")
+		fmt.Println("---")
+		fmt.Println(footerStyle.Render(fmt.Sprintf("Time elapsed: %s", time.Since(start).String())))
+
 		if askOpts.outputFile != "" {
 			fmt.Println("Outputting to file:", askOpts.outputFile)
 			err := os.WriteFile(askOpts.outputFile, []byte(questionOut+"\n"+answerOut), 0644)
@@ -70,17 +78,17 @@ var askCmd = &cobra.Command{
 			}
 		}
 
-		fmt.Println("")
-		fmt.Println("")
-		fmt.Println("")
-		fmt.Println("---")
-		fmt.Println("---")
-		fmt.Println(footerStyle.Render(fmt.Sprintf("Time elapsed: %s", time.Since(start).String())))
+		if config.GetXmppNotifierEnabled() {
+			fmt.Println("Send notification...")
+			notifier := adapter.NewXmppNotifierFromConfigs()
 
-		//if err := ui.RunStreamApp(cmd.Context(), strings.Join(args, " ")); err != nil {
-		//	fmt.Printf("failed to run stream app: %s\n", err)
-		//	return err
-		//}
+			if err := notifier.Notify(cmd.Context(), fmt.Sprintf("Question: %s\nAnswer: %s", questionIn, answer)); err != nil {
+				err = fmt.Errorf("notifying: %v", err)
+				fmt.Printf("Failed to notify: %v\n", err)
+				return err
+			}
+		}
+
 		return nil
 	},
 }

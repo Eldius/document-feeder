@@ -44,11 +44,11 @@ func (n *xmppNotifier) Notify(ctx context.Context, msg string) error {
 	log := logs.NewLogger(ctx, logs.KeyValueData{
 		"webhook_url": n.webhookURL,
 		"user":        n.user,
-		"pass":        n.pass != "",
+		"has_pass":    n.pass != "",
 		"recipient":   n.recipient,
 	})
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, n.webhookURL, io.NopCloser(strings.NewReader(msg)))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, n.webhookURL+"/"+n.recipient, io.NopCloser(strings.NewReader(msg)))
 	if err != nil {
 		err = fmt.Errorf("creating notification request: %w", err)
 		log.WithError(err).Error("failed to create notification request")

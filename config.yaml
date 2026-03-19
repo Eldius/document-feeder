@@ -2,6 +2,8 @@
 log:
     level: debug
     format: json
+    redacted_keys:
+      - Authorization
 ollama:
     endpoint: http://192.168.0.185:11434
     # Default configuration for nomic-embed-text (context length: 2048)
@@ -39,10 +41,13 @@ agents:
     lon: -43.33179723978804
     timezone: America/Sao_Paulo
 telemetry:
-  enabled: true
+  enabled: false
   traces:
     endpoint: "192.168.0.152:4317"
   metrics:
     endpoint: "192.168.0.152:4317"
   logs:
     endpoint: "192.168.0.152:4317"
+xmpp:
+  notifier:
+    enabled: true
