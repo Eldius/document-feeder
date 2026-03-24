@@ -162,3 +162,6 @@ vulncheck:
 
 linter:
 	golangci-lint run
+
+serve:
+	go run ./cmd/web
