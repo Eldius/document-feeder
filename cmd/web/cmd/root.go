@@ -2,12 +2,14 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/eldius/document-feeder/internal/config"
 	"github.com/eldius/document-feeder/internal/server/api"
 	"github.com/eldius/initial-config-go/configs"
 	"github.com/eldius/initial-config-go/setup"
-	"os"
-	"time"
+	"github.com/spf13/viper"
 
 	"github.com/spf13/cobra"
 )
@@ -42,11 +44,12 @@ to quickly create a Cobra application.`,
 			config.XmppNotifierPassProp,
 			config.XmppNotifierRecipientProp,
 			config.XmppNotifierEnabledProp,
+			config.ApiPortProp,
 		),
 	),
 	PersistentPostRunE: setup.PersistentPostRunE(1 * time.Second),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := api.StartServer(cmd.Context(), 8080); err != nil {
+		if err := api.StartServer(cmd.Context(), config.GetApiPort()); err != nil {
 			fmt.Printf("failed to start server: %s\n", err)
 			return err
 		}
@@ -58,6 +61,7 @@ var (
 	rootOpts struct {
 		enableNotification bool
 		cfgFile            string
+		apiPort            int
 	}
 )
 
@@ -75,4 +79,6 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&rootOpts.cfgFile, "config", "", "config file (default is $HOME/.document-feed-embedder.yaml)")
 	rootCmd.PersistentFlags().BoolVar(&rootOpts.enableNotification, "enable-notification", false, "Enable notification after execution")
+	rootCmd.PersistentFlags().IntVar(&rootOpts.apiPort, "port", 8080, "API port")
+	_ = viper.BindPFlag(config.ApiPortProp.Key, rootCmd.PersistentFlags().Lookup("port"))
 }

@@ -60,6 +60,10 @@ var (
 		Key:   "xmpp.notifier.enabled",
 		Value: false,
 	}
+	ApiPortProp = setup.Prop{
+		Key:   "api.port",
+		Value: 8080,
+	}
 )
 
 func GetOllamaEndpoint() string {
@@ -138,4 +142,8 @@ func PersistConfig() error {
 
 func GetFetchConfigStruct(key string, val any) error {
 	return viper.UnmarshalKey(key, &val)
+}
+
+func GetApiPort() int {
+	return viper.GetInt(ApiPortProp.Key)
 }
