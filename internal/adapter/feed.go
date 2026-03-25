@@ -4,10 +4,11 @@ import (
 	"context"
 	"embed"
 	"fmt"
-	"github.com/eldius/initial-config-go/logs"
-	chromem2 "github.com/philippgille/chromem-go"
 	"strings"
 	"text/template"
+
+	"github.com/eldius/initial-config-go/logs"
+	chromem2 "github.com/philippgille/chromem-go"
 
 	"github.com/eldius/document-feeder/internal/client/ollama"
 	"github.com/eldius/document-feeder/internal/config"
@@ -32,7 +33,15 @@ type FeedAdapter struct {
 	cacheEnabled             bool
 }
 
-func NewFeedAdapter(r storm.Repository, p feed.Parser, docs chromem.DocumentVectorizer, ollama ollama.Client, tmpl *template.Template, cacheSimilarityThreshold float32, cacheEnabled bool) *FeedAdapter {
+func NewFeedAdapter(
+	r storm.Repository,
+	p feed.Parser,
+	docs chromem.DocumentVectorizer,
+	ollama ollama.Client,
+	tmpl *template.Template,
+	cacheSimilarityThreshold float32,
+	cacheEnabled bool,
+) *FeedAdapter {
 	return &FeedAdapter{
 		r:                        r,
 		p:                        p,

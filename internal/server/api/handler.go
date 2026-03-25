@@ -2,18 +2,27 @@ package api
 
 import (
 	"context"
+	"embed"
 	"encoding/json"
 	"fmt"
+	"io/fs"
+	"net/http"
+
 	"github.com/eldius/document-feeder/internal/adapter"
 	"github.com/eldius/initial-config-go/http/server"
 	"github.com/eldius/initial-config-go/logs"
-	"net/http"
 )
 
 type handler struct {
 	feedAdapter *adapter.FeedAdapter
 	notifier    adapter.Notifier
+	staticFiles fs.FS
 }
+
+var (
+	//go:embed static/*
+	staticFiles embed.FS
+)
 
 func (h *handler) listFeeds(w http.ResponseWriter, r *http.Request) {
 	resp, err := h.feedAdapter.All(r.Context())
@@ -39,6 +48,21 @@ func (h *handler) refreshFeeds(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		err := h.feedAdapter.Refresh(ctx)
+		if err != nil {
+			log.WithError(err).Error("failed to get feeds")
+			if err := h.notifier.Notify(ctx, fmt.Sprintf("Failed to get feeds: %s", err)); err != nil {
+				log.WithError(err).Error("failed to notify")
+			}
+			http.Error(w, fmt.Sprintf("failed to get feeds: %s", err), http.StatusInternalServerError)
+			return
+		}
+		return
+	}
+
+	encoder := json.NewEncoder(w)
 	all, err := h.feedAdapter.All(ctx)
 	if err != nil {
 		log.WithError(err).Error("failed to get feeds")
@@ -55,13 +79,17 @@ func (h *handler) refreshFeeds(w http.ResponseWriter, r *http.Request) {
 	log.Info("feeds retrieved")
 
 	w.WriteHeader(http.StatusContinue)
+	var res []FeedSummary
 	for _, f := range all {
 		if err := h.feedAdapter.RefreshFeed(ctx, f); err != nil {
 			log.WithError(err).WithExtraData("feed_name", f.Title).Error("failed to refresh feed")
 			_, _ = w.Write([]byte(fmt.Sprintf("failed to refresh feed %s: %s", f.Title, err)))
 			continue
 		}
-		_, _ = w.Write([]byte(fmt.Sprintf("refreshed feed %s\n", f.Title)))
+		summary := ToFeedSummary(f)
+		_ = encoder.Encode(summary)
+		res = append(res, *summary)
+		flusher.Flush()
 	}
 
 	if err := h.notifier.Notify(ctx, "Feeds refreshed"); err != nil {
@@ -78,9 +106,7 @@ func (h *handler) addFeeds(w http.ResponseWriter, r *http.Request) {
 	log := logs.NewLogger(ctx)
 	log.Info("refreshing feeds")
 
-	// Set headers for streaming and JSON content
 	w.Header().Set("Content-Type", "application/json")
-	// Use chunked encoding if available (Go's net/http handles this implicitly with Flush)
 	w.Header().Set("Transfer-Encoding", "chunked")
 
 	var req AddFeedRequest
@@ -90,10 +116,8 @@ func (h *handler) addFeeds(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if the ResponseWriter supports the Flusher interface
 	flusher, ok := w.(http.Flusher)
 	if !ok {
-		fmt.Println("ResponseWriter does not support Flusher interface")
 		var res []FeedSummary
 		for _, f := range req.Feeds {
 			feed, err := h.feedAdapter.Parse(ctx, f)
@@ -135,7 +159,6 @@ func (h *handler) addFeeds(w http.ResponseWriter, r *http.Request) {
 				"error": err.Error(),
 			})
 			if err != nil {
-				fmt.Printf("failed to encode feed summary: %s\n", err)
 				log.WithError(err).Error("failed to encode feed summary")
 			}
 			_, _ = w.Write(b)
@@ -144,7 +167,6 @@ func (h *handler) addFeeds(w http.ResponseWriter, r *http.Request) {
 		}
 		feedSummary := ToFeedSummary(feed)
 		if err := encoder.Encode(feedSummary); err != nil {
-			fmt.Printf("failed to encode feed summary: %s\n", err)
 			log.WithError(err).Error("failed to encode feed summary")
 			_, _ = w.Write([]byte(
 				"failed to encode feed summary: " + err.Error() + "\n" +
@@ -153,7 +175,6 @@ func (h *handler) addFeeds(w http.ResponseWriter, r *http.Request) {
 		}
 
 		res = append(res, *feedSummary)
-		fmt.Println(" -> flushing")
 		flusher.Flush()
 	}
 
@@ -164,7 +185,6 @@ func (h *handler) addFeeds(w http.ResponseWriter, r *http.Request) {
 	log.Info("feeds refreshed")
 
 	if err := encoder.Encode(&res); err != nil {
-		fmt.Printf("failed to encode feed summary: %s\n", err)
 		log.WithError(err).Error("failed to encode feed summary")
 		_, _ = w.Write([]byte(
 			"failed to encode feed summary: " + err.Error() + "\n" +
@@ -174,10 +194,15 @@ func (h *handler) addFeeds(w http.ResponseWriter, r *http.Request) {
 	flusher.Flush()
 }
 
-func newHandler(feedAdapter *adapter.FeedAdapter, notifier adapter.Notifier) *handler {
+func newHandler(
+	feedAdapter *adapter.FeedAdapter,
+	notifier adapter.Notifier,
+	fs fs.FS,
+) *handler {
 	return &handler{
 		feedAdapter: feedAdapter,
 		notifier:    notifier,
+		staticFiles: fs,
 	}
 }
 
@@ -191,9 +216,14 @@ func StartServer(_ context.Context, port int) error {
 
 	n := adapter.NewXmppNotifierFromConfigs()
 
-	h := newHandler(a, n)
+	h := newHandler(a, n, staticFiles)
 
 	mux := http.NewServeMux()
+	sub, err := fs.Sub(staticFiles, "static")
+	if err != nil {
+		return err
+	}
+	mux.Handle("GET /", http.FileServerFS(sub))
 	mux.HandleFunc("GET /api/feeds", h.listFeeds)
 	mux.HandleFunc("PUT /api/feeds", h.refreshFeeds)
 	mux.HandleFunc("POST /api/feeds", h.addFeeds)
