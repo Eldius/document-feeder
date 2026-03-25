@@ -453,8 +453,8 @@ github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkp
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
 github.com/elazarl/goproxy v1.7.2 h1:Y2o6urb7Eule09PjlhQRGNsqRfPmYI3KKQLFpCAV3+o=
 github.com/elazarl/goproxy v1.7.2/go.mod h1:82vkLNir0ALaW14Rc399OTTjyNREgmdL2cVoIbS6XaE=
-github.com/eldius/initial-config-go v0.0.41 h1:sWboKglH51AOmieXbURAuhuHTg2PzBlh9mrER592q0c=
-github.com/eldius/initial-config-go v0.0.41/go.mod h1:YjqsqACZzGWACnU59Ws3Yur+w78qdAHop11sLZmL6C0=
+github.com/eldius/initial-config-go v0.0.42 h1:A0HTbSmyZ+jp53uWEgLWBg/YFlYTyCdcQlku4/QMaZQ=
+github.com/eldius/initial-config-go v0.0.42/go.mod h1:YjqsqACZzGWACnU59Ws3Yur+w78qdAHop11sLZmL6C0=
 github.com/emicklei/go-restful/v3 v3.12.2 h1:DhwDP0vY3k8ZzE0RunuJy8GhNpPL6zqLkDf9B/a0/xU=
 github.com/emicklei/go-restful/v3 v3.12.2/go.mod h1:6n3XBCmQQb25CM2LCACGz8ukIrRry+4bhvbpWn3mrbc=
 github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=

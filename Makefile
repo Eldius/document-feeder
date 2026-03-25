@@ -165,3 +165,8 @@ linter:
 
 serve:
 	go run ./cmd/web
+
+api-add:
+	curl -N -i -XPOST "http://localhost:8080/api/feeds" \
+		-H "Content-Type: application/json" \
+		-d @docs/samples/add_feeds_payload.json
