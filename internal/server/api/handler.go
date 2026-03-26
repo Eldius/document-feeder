@@ -29,14 +29,14 @@ func (h *handler) listFeeds(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.Header().Set("Content-Type", "plain/text")
 		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = w.Write([]byte(fmt.Sprintf("error: %s", err)))
+		_, _ = fmt.Fprintf(w, "error: %s", err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = w.Write([]byte(fmt.Sprintf("error: %s", err)))
+		_, _ = fmt.Fprintf(w, "error: %s", err)
 		return
 	}
 }
@@ -70,7 +70,7 @@ func (h *handler) refreshFeeds(w http.ResponseWriter, r *http.Request) {
 			log.WithError(err).Error("failed to notify")
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = w.Write([]byte(fmt.Sprintf("error: %s", err)))
+		_, _ = fmt.Fprintf(w, "error: %s", err)
 		return
 	}
 
@@ -83,7 +83,7 @@ func (h *handler) refreshFeeds(w http.ResponseWriter, r *http.Request) {
 	for _, f := range all {
 		if err := h.feedAdapter.RefreshFeed(ctx, f); err != nil {
 			log.WithError(err).WithExtraData("feed_name", f.Title).Error("failed to refresh feed")
-			_, _ = w.Write([]byte(fmt.Sprintf("failed to refresh feed %s: %s", f.Title, err)))
+			_, _ = fmt.Fprintf(w, "failed to refresh feed %s: %s", f.Title, err)
 			continue
 		}
 		summary := ToFeedSummary(f)
@@ -99,6 +99,13 @@ func (h *handler) refreshFeeds(w http.ResponseWriter, r *http.Request) {
 	log.Info("feeds refreshed")
 
 	w.WriteHeader(http.StatusOK)
+	if err := encoder.Encode(&res); err != nil {
+		log.WithError(err).Error("failed to encode feed summary")
+		_, _ = fmt.Fprint(w, "failed to encode feed summary: "+err.Error()+"\n"+
+			"Please check the logs for more details.",
+		)
+	}
+	flusher.Flush()
 }
 
 func (h *handler) addFeeds(w http.ResponseWriter, r *http.Request) {
@@ -112,7 +119,7 @@ func (h *handler) addFeeds(w http.ResponseWriter, r *http.Request) {
 	var req AddFeedRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		_, _ = w.Write([]byte(fmt.Sprintf("error: %s", err)))
+		_, _ = fmt.Fprintf(w, "error: %s", err)
 		return
 	}
 

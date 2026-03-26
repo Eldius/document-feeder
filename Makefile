@@ -119,12 +119,18 @@ sanitize:
 		./cmd/cli/ \
 			sanitize
 
-release:
+snapshot:
 	go tool \
 		goreleaser \
 			release \
 				--clean \
 				--snapshot
+
+release:
+	go tool \
+		goreleaser \
+			release \
+				--clean
 
 testing:
 	go run ./cmd/cli testing
@@ -140,16 +146,6 @@ models-autoconf:
 		models \
 		autoconfigure \
 			--model=all-minilm
-
-benchmark:
-	go run ./cmd/benchmarker \
-		--model=tinyllama:latest \
-		--model=deepseek-r1:7b
-
-benchmark-show:
-	go run ./cmd/benchmarker show \
-		--model=tinyllama:latest \
-		--model=deepseek-r1:7b
 
 validate: test linter vulncheck
 	@echo "Validation completed!"

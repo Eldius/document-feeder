@@ -8,6 +8,17 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	CliAppName = "document-feeder-cli"
+	WebAppName = "document-feeder-web"
+)
+
+var (
+	Version   string
+	BuildDate string
+	Commit    string
+)
+
 var (
 	OllamaEndPointProp = setup.Prop{
 		Key:   "ollama.endpoint",

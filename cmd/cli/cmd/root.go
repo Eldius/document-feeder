@@ -1,9 +1,11 @@
 package cmd
 
 import (
-	"github.com/spf13/viper"
 	"os"
 	"time"
+
+	"github.com/eldius/initial-config-go/telemetry"
+	"github.com/spf13/viper"
 
 	"github.com/eldius/document-feeder/internal/config"
 	"github.com/eldius/initial-config-go/configs"
@@ -18,12 +20,13 @@ var rootCmd = &cobra.Command{
 	Short: "A simple news feed tool",
 	Long:  `A simple news feed tool.`,
 	PersistentPreRunE: setup.PersistentPreRunE(
-		"document-feeder",
+		config.CliAppName,
 		setup.WithConfigFileToBeUsed(rootOpts.cfgFile),
 		setup.WithDefaultCfgFileLocations("~", ".config", "."),
 		setup.WithEnvPrefix("FEEDER"),
 		setup.WithDefaultCfgFileName("config"),
 		setup.WithDefaultValues(configs.DefaultConfigValuesLogFileMap),
+		setup.WithOpenTelemetryOptions(telemetry.WithService(config.CliAppName, config.Version, "")),
 		setup.WithProps(
 			config.OllamaEndPointProp,
 			config.OllamaEmbeddingModelProp,

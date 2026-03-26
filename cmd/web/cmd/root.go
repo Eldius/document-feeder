@@ -9,6 +9,7 @@ import (
 	"github.com/eldius/document-feeder/internal/server/api"
 	"github.com/eldius/initial-config-go/configs"
 	"github.com/eldius/initial-config-go/setup"
+	"github.com/eldius/initial-config-go/telemetry"
 	"github.com/spf13/viper"
 
 	"github.com/spf13/cobra"
@@ -25,11 +26,12 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	PersistentPreRunE: setup.PersistentPreRunE(
-		"document-feeder",
+		config.WebAppName,
 		setup.WithConfigFileToBeUsed(rootOpts.cfgFile),
 		setup.WithDefaultCfgFileLocations("~", ".config", "."),
 		setup.WithEnvPrefix("FEEDER"),
 		setup.WithDefaultCfgFileName("config"),
+		setup.WithOpenTelemetryOptions(telemetry.WithService(config.WebAppName, config.Version, "")),
 		setup.WithDefaultValues(configs.DefaultConfigValuesLogFileMap),
 		setup.WithProps(
 			config.OllamaEndPointProp,
