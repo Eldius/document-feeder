@@ -23,7 +23,7 @@ func (d detachedContext) Err() error {
 }
 
 // Value delegates to the original context for request-scoped data (e.g., user ID, logger, trace ID).
-func (d detachedContext) Value(key interface{}) interface{} {
+func (d detachedContext) Value(key any) any {
 	return d.Context.Value(key)
 }
 

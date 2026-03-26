@@ -103,10 +103,7 @@ func (m articleReaderModel) View() string {
 	lines := m.articleLines(m.width)
 	bodyHeight := m.bodyHeight()
 	start := clamp(m.offset, 0, m.maxOffset())
-	end := start + bodyHeight
-	if end > len(lines) {
-		end = len(lines)
-	}
+	end := min(start+bodyHeight, len(lines))
 	body := strings.Join(lines[start:end], "\n")
 
 	return lipgloss.JoinVertical(lipgloss.Left, header, body, footer)
@@ -135,10 +132,7 @@ func (m articleReaderModel) articleLines(width int) []string {
 
 	article := m.articles[m.index]
 	sectionTitleStyle := lipgloss.NewStyle().Bold(true)
-	wrapWidth := width
-	if wrapWidth < 10 {
-		wrapWidth = 10
-	}
+	wrapWidth := max(width, 10)
 
 	content, err := htmltomarkdown.ConvertString(article.Content)
 	if err != nil {

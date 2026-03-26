@@ -91,7 +91,7 @@ type Article struct {
 	Guid            string           `json:"guid"`
 	DcExt           DcExt            `json:"dcExt"`
 	Extensions      ArticleExtension `json:"extensions"`
-	Image           ArticleImage     `json:"image,omitempty"`
+	Image           ArticleImage     `json:"image"`
 	Categories      []string         `json:"categories,omitempty"`
 }
 
