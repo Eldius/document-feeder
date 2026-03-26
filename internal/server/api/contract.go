@@ -13,6 +13,7 @@ type FeedListResponse struct {
 type FeedSummary struct {
 	Title string `json:"title"`
 	URL   string `json:"url"`
+	Error string `json:"error,omitempty"`
 }
 
 func ToFeedSummary(feed *model.Feed) *FeedSummary {

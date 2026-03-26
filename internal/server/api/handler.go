@@ -154,9 +154,10 @@ func (h *handler) addFeeds(w http.ResponseWriter, r *http.Request) {
 		feed, err := h.feedAdapter.Parse(ctx, f)
 		if err != nil {
 			log.WithError(err).WithExtraData("feed_name", f).Error("failed to refresh feed")
-			b, err := json.Marshal(map[string]any{
-				"feed":  f,
-				"error": err.Error(),
+			b, err := json.Marshal(FeedSummary{
+				Title: "",
+				URL:   f,
+				Error: err.Error(),
 			})
 			if err != nil {
 				log.WithError(err).Error("failed to encode feed summary")
@@ -173,6 +174,7 @@ func (h *handler) addFeeds(w http.ResponseWriter, r *http.Request) {
 					"Please check the logs for more details.",
 			))
 		}
+		//_, _ = w.Write([]byte("\n"))
 
 		res = append(res, *feedSummary)
 		flusher.Flush()
