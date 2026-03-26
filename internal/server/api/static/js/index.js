@@ -1,6 +1,22 @@
 
 console.log("Hello from static js");
 
+function hideSections() {
+    // Select all elements with the specified class name
+    const elements = document.querySelectorAll('.section');
+    // Iterate over the elements and set their display style to 'none'
+    elements.forEach(element => {
+        element.style.display = 'none';
+    });
+}
+
+function showSection(selector) {
+    hideSections();
+    // Select all elements with the specified class name
+    document.querySelector(selector).style.display = 'block';
+
+}
+
 async function streamJsonData(url) {
     let feeds = document.getElementById("feed-input").value
     document.getElementById("feed-add-button").disabled = true;
@@ -62,4 +78,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
     console.log("load function called");
     console.log(JSON.stringify(event));
     document.getElementById("feed-add-button").onclick = streamJsonData;
+
+    showSection("#add_feed_container");
 });

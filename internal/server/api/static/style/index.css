@@ -1,14 +1,54 @@
+
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
 footer {
     text-align: right;
     padding: 1rem;
+}
+
+header {
+    width: 100%;
 }
 
 .container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: left;
+    /*justify-content: center;*/
     min-height: 100vh;
     margin: 10px;
     padding: 10px;
+    width: 80%;
+    align-self: center;
+}
+
+.screen_footer {
+    align-self: flex-end;
+}
+
+.section {
+    margin: 10px;
+    padding: 10px;
+    border: 1px solid black;
+}
+
+.main {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    text-align: left;
+}
+
+.sub {
+    font-size: 16px;
+    font-weight: normal;
+    margin: 0;
+}
+.spacer {
+    flex: 1;
 }

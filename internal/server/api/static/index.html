@@ -1,4 +1,5 @@
-<html>
+<!DOCTYPE html>
+<html lang="">
     <head>
         <title>Feeder</title>
         <script src="/js/index.js"></script>
@@ -6,15 +7,32 @@
     </head>
     <body>
         <div class="container">
-            <h1>Feeder</h1>
-            <article id="feed_add">
-                <p><label for="feed-input">Feed</label></p>
-                <textarea id="feed-input" rows="10" cols="80"></textarea>
-                <p><button id="feed-add-button">Add Feeds</button></p>
-                <p><label for="progress" style="font-weight: bold">Progress:</label>&nbsp;<span id="progress"></span></p>
-                <ul id="feed_add_output"></ul>
-            </article>
-            <footer style="align-self: flex-end;">
+            <header class="screen_header">
+                <h1 class="main"><a href="/">Feeder</a></h1>
+                <div class="sub">
+                    <!--<div class="spacer"></div>-->
+                    <button onclick="showSection('#add_feed_container')">Add Feeds</button>
+                    <!--<div class="spacer"></div>-->
+                    <button onclick="showSection('#list_feeds_container')">List Feeds</button>
+                </div>
+            </header>
+            <div id="add_feed_container" class="section">
+                <article id="feed_add">
+                    <h2>Add Feeds</h2>
+                    <p><label for="feed-input">Feed</label></p>
+                    <textarea id="feed-input" rows="10" cols="80"></textarea>
+                    <p><button id="feed-add-button">Add Feeds</button></p>
+                    <p><label for="progress" style="font-weight: bold">Progress:</label>&nbsp;<span id="progress"></span></p>
+                    <ul id="feed_add_output"></ul>
+                </article>
+            </div>
+            <div id="list_feeds_container" class="section">
+                <article id="feed_list">
+                    <h2>Feeds</h2>
+                    <ul id="feed_list_output"></ul>
+                </article>
+            </div>
+            <footer class="screen_footer">
                 <p>
                     <a href="https://github.com/eldius/document-feeder" target="_blank">[eldius/document-feeder - GitHub]</a>
                 </p>
