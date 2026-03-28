@@ -1,4 +1,4 @@
-package add_feed
+package refresh_feeds
 
 import (
 	"charm.land/bubbles/v2/progress"

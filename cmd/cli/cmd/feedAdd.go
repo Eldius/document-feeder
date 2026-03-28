@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/eldius/document-feeder/internal/ui/v2/add_feeds"
 
 	"github.com/eldius/document-feeder/internal/adapter"
-	"github.com/eldius/document-feeder/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +23,12 @@ Example: feed add https://www.heise.de/news/rss/heise-newsfeed.xml.
 			fmt.Printf("failed to create adapter: %s\n", err)
 			return err
 		}
-		if err := ui.AddScreen(cmd.Context(), a, feedAddOpts.feed); err != nil {
+		//if err := ui.AddScreen(cmd.Context(), a, feedAddOpts.feed); err != nil {
+		//	err := fmt.Errorf("adding feeds: %w", err)
+		//	fmt.Printf("failed to add feeds: %s\n", err)
+		//	return err
+		//}
+		if err := add_feeds.Start(cmd.Context(), a, feedAddOpts.feed); err != nil {
 			err := fmt.Errorf("adding feeds: %w", err)
 			fmt.Printf("failed to add feeds: %s\n", err)
 			return err

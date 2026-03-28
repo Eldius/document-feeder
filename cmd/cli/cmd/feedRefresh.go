@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/eldius/document-feeder/internal/ui"
+	"github.com/eldius/document-feeder/internal/ui/v2/refresh_feeds"
 
 	"github.com/eldius/document-feeder/internal/adapter"
 
@@ -32,8 +32,9 @@ to quickly create a Cobra application.`,
 				fmt.Printf("failed to create adapter: %s\n", err)
 				return err
 			}
-			if err := ui.RefreshScreen(cmd.Context(), a); err != nil {
-				fmt.Printf("failed to refresh screen: %s\n", err)
+			if err := refresh_feeds.Start(cmd.Context(), a); err != nil {
+				err := fmt.Errorf("starting refresh: %w", err)
+				fmt.Printf("failed to start refresh: %s\n", err)
 				return err
 			}
 			return nil

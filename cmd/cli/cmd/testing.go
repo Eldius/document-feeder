@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"github.com/eldius/document-feeder/internal/adapter"
-	"github.com/eldius/document-feeder/internal/ui/v2/add_feed"
+	"github.com/eldius/document-feeder/internal/ui/v2/refresh_feeds"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +23,7 @@ to quickly create a Cobra application.`,
 			return err
 		}
 
-		if err := add_feed.Start(cmd.Context(), a); err != nil {
+		if err := refresh_feeds.Start(cmd.Context(), a); err != nil {
 			cmd.Printf("failed to start add feed: %s\n", err)
 			return err
 		}
