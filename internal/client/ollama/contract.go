@@ -7,9 +7,9 @@ import (
 )
 
 type EmbeddingRequest struct {
-	Model     string   `json:"model"`
-	Input     []string `json:"input"`
-	KeepAlive int      `json:"keep_alive"`
+	Model     string   `json:"model"`      //Model name of a model to be used to embed texts.
+	Input     []string `json:"input"`      //Input a list of texts to embed.
+	KeepAlive int      `json:"keep_alive"` //KeepAlive number of seconds to keep the model loaded in memory.
 }
 
 type EmbeddingResponse struct {

@@ -1,11 +1,10 @@
-
 REMOTE_USER := eldius
 REMOTE_HOST := 192.168.0.152
 REMOTE_DIR := .bin/docs/bin
 REMOTE_OS := linux
 REMOTE_ARCH := arm64_v8.0
 
-push: release
+push: snapshot
 	REMOTE_USER=$(REMOTE_USER) \
 		REMOTE_HOST=$(REMOTE_HOST) \
 		REMOTE_DIR=$(REMOTE_DIR) \
@@ -13,8 +12,8 @@ push: release
 		REMOTE_ARCH=$(REMOTE_ARCH) \
 			./scripts/push.sh
 
-remote-benchmark: push
-	ssh $(REMOTE_USER)@$(REMOTE_HOST) 'cd ./.bin/docs/bin; ./benchmarker-cli  --model=tinyllama:latest --model=deepseek-r1:7b'
+remote-serve: push
+	ssh $(REMOTE_USER)@$(REMOTE_HOST) 'cd ./.bin/docs/bin; ./feeder-web'
 
 add:
 	go run \

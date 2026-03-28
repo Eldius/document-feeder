@@ -9,10 +9,13 @@
         <div class="container">
             <header class="screen_header">
                 <h1 class="main"><a href="/">Feeder</a></h1>
+                <hr />
+                <hr />
                 <div class="sub">
-                    <!--<div class="spacer"></div>-->
+                    <button onclick="showSection('#search_feed_container')">Search</button>
+<!--                    <div class="spacer"></div>-->
                     <button onclick="showSection('#add_feed_container')">Add Feeds</button>
-                    <!--<div class="spacer"></div>-->
+<!--                    <div class="spacer"></div>-->
                     <button onclick="showSection('#list_feeds_container')">List Feeds</button>
                 </div>
             </header>
@@ -28,10 +31,20 @@
             </div>
             <div id="list_feeds_container" class="section">
                 <article id="feed_list">
-                    <h2>Feeds</h2>
+                    <h2>All Feeds</h2>
                     <ul id="feed_list_output"></ul>
                 </article>
             </div>
+            <div id="search_feed_container" class="section">
+                <article id="feed_search">
+                    <h2>Search Feeds</h2>
+                    <p><label for="search-input">Search</label></p>
+                    <textarea id="search-input" rows="10" cols="80"></textarea>
+                    <p><button id="search-button" onclick="search()">Search</button></p>
+                    <ul id="feed_search_output"></ul>
+                </article>
+            </div>
+
             <footer class="screen_footer">
                 <p>
                     <a href="https://github.com/eldius/document-feeder" target="_blank">[eldius/document-feeder - GitHub]</a>

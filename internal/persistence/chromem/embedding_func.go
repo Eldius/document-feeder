@@ -34,8 +34,9 @@ func NewEmbeddingFuncOllama(model string, oc ollama.Client) chromem.EmbeddingFun
 		})
 		// Prepare the request body.
 		reqBody := ollama.EmbeddingRequest{
-			Model: model,
-			Input: []string{text},
+			Model:     model,
+			Input:     []string{text},
+			KeepAlive: 60,
 		}
 
 		log.Debug("Calling embedding API")

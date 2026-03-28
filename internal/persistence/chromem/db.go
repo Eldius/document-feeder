@@ -144,7 +144,7 @@ func (d *vectorizer) Save(ctx context.Context, feed *model.Feed) error {
 			continue
 		}
 
-		spltDocs, err := d.htmlParse(ctx, article)
+		splitDocs, err := d.htmlParse(ctx, article)
 		if err != nil {
 			logs.NewLogger(ctx, logs.KeyValueData{
 				"error": err,
@@ -160,7 +160,7 @@ func (d *vectorizer) Save(ctx context.Context, feed *model.Feed) error {
 			"date":      article.PublishedParsed.Format("2006-01-02"),
 			"tags":      strings.Join(article.Categories, ","),
 		}
-		for i, doc := range spltDocs {
+		for i, doc := range splitDocs {
 			md := maps.Clone(metadata)
 			chunkID := fmt.Sprintf("%.0000d-", i) + article.Link
 			md["chunk_id"] = chunkID

@@ -16,6 +16,27 @@ type FeedSummary struct {
 	Error string `json:"error,omitempty"`
 }
 
+type SearchRequest struct {
+	Query string `json:"query"`
+}
+
+type SearchResponse struct {
+	Results []SearchResult `json:"results"`
+}
+
+type SearchResult struct {
+	FeedTitle  string  `json:"feed_title"`
+	Article    Article `json:"article"`
+	Similarity float32 `json:"similarity"`
+}
+
+type Article struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Content     string `json:"content"`
+	Link        string `json:"link"`
+}
+
 func ToFeedSummary(feed *model.Feed) *FeedSummary {
 	if feed == nil {
 		return nil

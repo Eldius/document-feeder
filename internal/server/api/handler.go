@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
+	"sync"
+	"time"
 
 	"github.com/eldius/document-feeder/internal/adapter"
 	"github.com/eldius/initial-config-go/http/server"
@@ -25,7 +27,7 @@ var (
 )
 
 func (h *handler) listFeeds(w http.ResponseWriter, r *http.Request) {
-	resp, err := h.feedAdapter.All(r.Context())
+	feeds, err := h.feedAdapter.All(r.Context())
 	if err != nil {
 		w.Header().Set("Content-Type", "plain/text")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -33,6 +35,13 @@ func (h *handler) listFeeds(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var resp []FeedSummary
+	for _, f := range feeds {
+		resp = append(resp, FeedSummary{
+			Title: f.Title,
+			URL:   f.Link,
+		})
+	}
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -109,6 +118,10 @@ func (h *handler) refreshFeeds(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) addFeeds(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		_ = r.Body.Close()
+	}()
+
 	ctx := r.Context()
 	log := logs.NewLogger(ctx)
 	log.Info("refreshing feeds")
@@ -122,85 +135,106 @@ func (h *handler) addFeeds(w http.ResponseWriter, r *http.Request) {
 		_, _ = fmt.Fprintf(w, "error: %s", err)
 		return
 	}
+	flusher := w.(http.Flusher)
+	encoder := json.NewEncoder(w)
 
-	flusher, ok := w.(http.Flusher)
-	if !ok {
-		var res []FeedSummary
-		for _, f := range req.Feeds {
-			feed, err := h.feedAdapter.Parse(ctx, f)
-			if err != nil {
-				log.WithError(err).Error("failed to encode feed summary")
-				http.Error(w, fmt.Sprintf("failed to encode feed summary: %s", err), http.StatusInternalServerError)
-				return
-			}
-			feedSummary := ToFeedSummary(feed)
-			res = append(res, *feedSummary)
-		}
-		if err := json.NewEncoder(w).Encode(res); err != nil {
-			log.WithError(err).Error("failed to encode feed summary")
-			http.Error(w, fmt.Sprintf("failed to encode feed summary: %s", err), http.StatusInternalServerError)
-		}
+	if err := h.processAddFeeds(ctx, &req, encoder, flusher); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = fmt.Fprintf(w, "error: %s", err)
+	}
+}
+
+func (h *handler) searchOnFeeds(w http.ResponseWriter, r *http.Request) {
+
+	var req SearchRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "error: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	searchResult, err := h.feedAdapter.Search(r.Context(), req.Query, 10)
+	if err != nil {
+		http.Error(w, "error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Create a JSON encoder that writes directly to the response writer
-	encoder := json.NewEncoder(w)
+	var resp SearchResponse
+	for _, f := range searchResult {
+		resp.Results = append(resp.Results, SearchResult{
+			FeedTitle: f.FeedTitle,
+			Article: Article{
+				Title:       f.Article.Title,
+				Description: f.Article.Description,
+				Content:     f.Article.Content,
+				Link:        f.Article.Link,
+			},
+			Similarity: f.Similarity,
+		})
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(&resp)
+}
 
-	defer func() {
-		_ = r.Body.Close()
-	}()
+func (h *handler) processAddFeeds(ctx context.Context, req *AddFeedRequest, encoder *json.Encoder, flusher http.Flusher) error {
+	var wg sync.WaitGroup
 
-	log = log.WithExtraData("feeds_count", len(req.Feeds))
+	out := streamOutput{encoder: encoder, flusher: flusher}
 
-	log.Info("feeds retrieved")
+	_ctx, cancelFunc := context.WithCancel(ctx)
+	defer cancelFunc()
+	wg.Go(func() {
+		ctx := _ctx
+		log := logs.NewLogger(ctx)
+		for {
+			select {
+			case <-ctx.Done():
+				log.Info("context cancelled")
+				return
+			case <-time.After(10 * time.Second):
+				log.Info("ping")
+				out.partialOutput(FeedSummary{})
+			}
+		}
+	})
 
-	w.WriteHeader(http.StatusContinue)
-
+	log := logs.NewLogger(ctx)
 	var res []FeedSummary
 	for _, f := range req.Feeds {
 		feed, err := h.feedAdapter.Parse(ctx, f)
 		if err != nil {
 			log.WithError(err).WithExtraData("feed_name", f).Error("failed to refresh feed")
-			b, err := json.Marshal(FeedSummary{
+			summary := FeedSummary{
 				Title: "",
 				URL:   f,
 				Error: err.Error(),
-			})
-			if err != nil {
-				log.WithError(err).Error("failed to encode feed summary")
 			}
-			_, _ = w.Write(b)
-			flusher.Flush()
+			out.partialOutput(summary)
+			res = append(res, summary)
 			continue
 		}
-		feedSummary := ToFeedSummary(feed)
-		if err := encoder.Encode(feedSummary); err != nil {
-			log.WithError(err).Error("failed to encode feed summary")
-			_, _ = w.Write([]byte(
-				"failed to encode feed summary: " + err.Error() + "\n" +
-					"Please check the logs for more details.",
-			))
-		}
-		//_, _ = w.Write([]byte("\n"))
 
-		res = append(res, *feedSummary)
-		flusher.Flush()
+		summary := ToFeedSummary(feed)
+		out.partialOutput(*summary)
+		res = append(res, *summary)
 	}
+	cancelFunc()
 
-	if err := h.notifier.Notify(ctx, "Feeds refreshed"); err != nil {
-		log.WithError(err).Error("failed to notify")
+	_ = encoder.Encode(&res)
+	return nil
+}
+
+type streamOutput struct {
+	encoder *json.Encoder
+	flusher http.Flusher
+	sync.Mutex
+}
+
+func (o *streamOutput) partialOutput(val any) {
+	if o.encoder != nil {
+		_ = o.encoder.Encode(val)
 	}
-
-	log.Info("feeds refreshed")
-
-	if err := encoder.Encode(&res); err != nil {
-		log.WithError(err).Error("failed to encode feed summary")
-		_, _ = w.Write([]byte(
-			"failed to encode feed summary: " + err.Error() + "\n" +
-				"Please check the logs for more details.",
-		))
+	if o.flusher != nil {
+		o.flusher.Flush()
 	}
-	flusher.Flush()
 }
 
 func newHandler(
@@ -236,6 +270,7 @@ func StartServer(_ context.Context, port int) error {
 	mux.HandleFunc("GET /api/feeds", h.listFeeds)
 	mux.HandleFunc("PUT /api/feeds", h.refreshFeeds)
 	mux.HandleFunc("POST /api/feeds", h.addFeeds)
+	mux.HandleFunc("POST /api/feeds/search", h.searchOnFeeds)
 
 	s := &http.Server{
 		Addr:    fmt.Sprintf(":%d", port),

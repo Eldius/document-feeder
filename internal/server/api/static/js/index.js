@@ -2,9 +2,7 @@
 console.log("Hello from static js");
 
 function hideSections() {
-    // Select all elements with the specified class name
     const elements = document.querySelectorAll('.section');
-    // Iterate over the elements and set their display style to 'none'
     elements.forEach(element => {
         element.style.display = 'none';
     });
@@ -12,12 +10,11 @@ function hideSections() {
 
 function showSection(selector) {
     hideSections();
-    // Select all elements with the specified class name
     document.querySelector(selector).style.display = 'block';
 
 }
 
-async function streamJsonData(url) {
+async function streamJsonData() {
     let feeds = document.getElementById("feed-input").value
     document.getElementById("feed-add-button").disabled = true;
     document.getElementById("feed-input").disabled = true;
@@ -45,24 +42,27 @@ async function streamJsonData(url) {
             document.getElementById("feed-input").disabled = false;
             break;
         }
+        if ((value === undefined)||(value.length === 0)) {
+            continue;
+        }
 
-        // Decode the Uint8Array chunk to a string
         accumulatedChunks += decoder.decode(value, { stream: true });
 
-        // You now need a way to parse valid JSON objects from 'accumulatedChunks'
-        // as they become available. This is where a specialized library
-        // or a specific protocol (like NDJSON) is necessary.
-        // For example, if the server sends newline-delimited JSON (NDJSON):
         const lines = accumulatedChunks.split('\n');
         for (let i = 0; i < lines.length - 1; i++) {
-            document.getElementById("progress").innerHTML = `${counter} of ${feedList.length}`;
             try {
                 const jsonObject = JSON.parse(lines[i]);
+                if (jsonObject.url === "") {
+                    console.log("pong!");
+                    continue;
+                }
+
                 console.log('Parsed object:', jsonObject);
                 if (jsonObject.error != null) {
                     list.innerHTML += `<li><span style="color:red; font-weight:bold;">!</span><a target="_blank" href="${jsonObject.url}">${jsonObject.url}</a></li>`;
                     continue;
                 }
+                document.getElementById("progress").innerHTML = `${counter} of ${feedList.length}`;
                 list.innerHTML += `<li>&#x2705;<a target="_blank" href="${jsonObject.url}">${jsonObject.title}</a></li>`;
             } catch (error) {
                 console.error('Error parsing JSON chunk:', error);
@@ -74,10 +74,41 @@ async function streamJsonData(url) {
     }
 }
 
+async function refreshFeeds() {
+    document.getElementById("feed_list_output").innerHTML = "";
+    fetch("/api/feeds")
+        .then(response => response.json())
+        .then(data => {
+            data.forEach(feed => {
+                document.getElementById("feed_list_output").innerHTML += `<li><a target="_blank" href="${feed.url}">${feed.title}</a></li>`;
+            })
+        })
+        .catch(error => console.error('Error:', error));
+
+}
+
+async function search() {
+
+    fetch("/api/feeds/search",{
+        method: "POST",
+        body: JSON.stringify({
+            "query": document.getElementById("search-input").value
+        }),
+    }).then(response => response.json())
+    .then(data => {
+        data.results.forEach(feed => {
+            console.log(feed);
+            document.getElementById("feed_search_output").innerHTML += `<li><a target="_blank" href="${feed.article.link}">${feed.article.title}</a> - (${feed.feed_title})</li>`;
+        })
+    }).catch(error => console.error('Error:', error));
+    console.log("searching on feeds");
+}
+
 document.addEventListener('DOMContentLoaded', (event) => {
     console.log("load function called");
     console.log(JSON.stringify(event));
     document.getElementById("feed-add-button").onclick = streamJsonData;
 
-    showSection("#add_feed_container");
+    refreshFeeds().then(() => console.log("refreshed feeds"));
+    showSection("#search_feed_container");
 });
