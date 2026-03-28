@@ -1,7 +1,8 @@
 package cmd
 
 import (
-	"fmt"
+	"github.com/eldius/document-feeder/internal/adapter"
+	"github.com/eldius/document-feeder/internal/ui/v2/add_feed"
 	"github.com/spf13/cobra"
 )
 
@@ -16,7 +17,16 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Println("testing")
+		a, err := adapter.NewFeedAdapterFromConfigs()
+		if err != nil {
+			cmd.Printf("failed to create adapter: %s\n", err)
+			return err
+		}
+
+		if err := add_feed.Start(cmd.Context(), a); err != nil {
+			cmd.Printf("failed to start add feed: %s\n", err)
+			return err
+		}
 
 		return nil
 	},
