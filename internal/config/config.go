@@ -41,7 +41,7 @@ var (
 		Value: "llama3:8b-instruct-q4_K_M",
 	}
 	OllamaGenerationCacheEnabledProp = setup.Prop{
-		Key:   "ollama.generation.cache_enabled",
+		Key:   "ollama.generation.cache.enabled",
 		Value: false,
 	}
 	OllamaGenerationNoCacheProp = setup.Prop{
@@ -49,8 +49,20 @@ var (
 		Value: false,
 	}
 	OllamaGenerationCacheSimilarityThresholdProp = setup.Prop{
-		Key:   "ollama.generation.cache_similarity_threshold",
-		Value: 0.8,
+		Key:   "ollama.generation.cache.similarity_threshold",
+		Value: 0.9,
+	}
+	OllamaGenerationContextSimilarityThresholdProp = setup.Prop{
+		Key:   "ollama.generation.context.similarity_threshold",
+		Value: 0.9,
+	}
+	OllamaGenerationContextEnabledProp = setup.Prop{
+		Key:   "ollama.generation.context.enabled",
+		Value: false,
+	}
+	OllamaGenerationContextMaxDocumentsProp = setup.Prop{
+		Key:   "ollama.generation.context.max_documents",
+		Value: 5,
 	}
 	XmppNotifierURLProp = setup.Prop{
 		Key:   "xmpp.notifier.webhook_url",
@@ -157,4 +169,16 @@ func GetFetchConfigStruct(key string, val any) error {
 
 func GetApiPort() int {
 	return viper.GetInt(ApiPortProp.Key)
+}
+
+func GetOllamaGenerationContextEnabled() bool {
+	return viper.GetBool(OllamaGenerationContextEnabledProp.Key)
+}
+
+func GetOllamaGenerationContextMaxDocuments() int {
+	return viper.GetInt(OllamaGenerationContextMaxDocumentsProp.Key)
+}
+
+func GetOllamaGenerationContextSimilarityThreshold() float32 {
+	return float32(viper.GetFloat64(OllamaGenerationContextSimilarityThresholdProp.Key))
 }

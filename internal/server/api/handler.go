@@ -51,6 +51,11 @@ func (h *handler) listFeeds(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) refreshFeeds(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		_ = r.Body.Close()
+		_ = h.notifier.Notify(r.Context(), "Feeds added")
+	}()
+
 	ctx := r.Context()
 	log := logs.NewLogger(ctx)
 	log.Info("refreshing feeds")
@@ -120,6 +125,7 @@ func (h *handler) refreshFeeds(w http.ResponseWriter, r *http.Request) {
 func (h *handler) addFeeds(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		_ = r.Body.Close()
+		_ = h.notifier.Notify(r.Context(), "Feeds added")
 	}()
 
 	ctx := r.Context()
@@ -172,6 +178,53 @@ func (h *handler) searchOnFeeds(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(&resp)
+}
+
+func (h *handler) askAQuestion(w http.ResponseWriter, r *http.Request) {
+
+	_ctx, cancelFunc := context.WithCancel(r.Context())
+	defer cancelFunc()
+
+	if flusher, ok := w.(http.Flusher); ok {
+		var wg sync.WaitGroup
+		wg.Go(func() {
+			ctx := _ctx
+			log := logs.NewLogger(ctx)
+			for {
+				select {
+				case <-ctx.Done():
+					log.Info("context done")
+					return
+				case <-time.After(60 * time.Second):
+					log.Info("ping")
+					_, _ = w.Write([]byte(" "))
+					flusher.Flush()
+				}
+			}
+		})
+	}
+
+	var req QuestionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "error: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	answer, err := h.feedAdapter.AskAQuestion(r.Context(), req.Question)
+	if err != nil {
+		_ = h.notifier.Notify(r.Context(), "Failed to ask a question: "+err.Error()+"\n")
+		http.Error(w, "error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	cancelFunc()
+
+	w.Header().Set("Content-Type", "application/json")
+	resp := &AnswerResponse{
+		Question: req.Question,
+		Answer:   answer,
+	}
+	_ = h.notifier.Notify(r.Context(), "Question:\n"+req.Question+"\n\nAnswer:\n"+answer+"\n\n")
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 func (h *handler) processAddFeeds(ctx context.Context, req *AddFeedRequest, encoder *json.Encoder, flusher http.Flusher) error {
@@ -229,6 +282,8 @@ type streamOutput struct {
 }
 
 func (o *streamOutput) partialOutput(val any) {
+	o.Lock()
+	defer o.Unlock()
 	if o.encoder != nil {
 		_ = o.encoder.Encode(val)
 	}
@@ -271,6 +326,7 @@ func StartServer(_ context.Context, port int) error {
 	mux.HandleFunc("PUT /api/feeds", h.refreshFeeds)
 	mux.HandleFunc("POST /api/feeds", h.addFeeds)
 	mux.HandleFunc("POST /api/feeds/search", h.searchOnFeeds)
+	mux.HandleFunc("POST /api/question", h.askAQuestion)
 
 	s := &http.Server{
 		Addr:    fmt.Sprintf(":%d", port),

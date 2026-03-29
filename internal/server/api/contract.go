@@ -20,6 +20,15 @@ type SearchRequest struct {
 	Query string `json:"query"`
 }
 
+type QuestionRequest struct {
+	Question string `json:"question"`
+}
+
+type AnswerResponse struct {
+	Question string `json:"query"`
+	Answer   string `json:"answer"`
+}
+
 type SearchResponse struct {
 	Results []SearchResult `json:"results"`
 }

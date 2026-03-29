@@ -89,17 +89,38 @@ async function refreshFeeds() {
 
 async function search() {
 
+    document.getElementById("feed_search_output").innerHTML = "";
     fetch("/api/feeds/search",{
         method: "POST",
         body: JSON.stringify({
             "query": document.getElementById("search-input").value
         }),
     }).then(response => response.json())
-    .then(data => {
-        data.results.forEach(feed => {
-            console.log(feed);
-            document.getElementById("feed_search_output").innerHTML += `<li><a target="_blank" href="${feed.article.link}">${feed.article.title}</a> - (${feed.feed_title})</li>`;
-        })
+        .then(data => {
+            data.results.forEach(feed => {
+                console.log(feed);
+                document.getElementById("feed_search_output").innerHTML += `<li><a target="_blank" href="${feed.article.link}">${feed.article.title}</a> - (${feed.feed_title})</li>`;
+            })
+        }).catch(error => console.error('Error:', error));
+    console.log("searching on feeds");
+}
+
+async function ask() {
+
+    document.getElementById("question_output_question").innerHTML = document.getElementById("question-input").value;
+    document.getElementById("question_output_answer").innerHTML = "Waiting for response...";
+    document.getElementById("question-input").disabled = true;
+    document.getElementById("question-button").disabled = true;
+    fetch("/api/question",{
+        method: "POST",
+        body: JSON.stringify({
+            "question": document.getElementById("question-input").value
+        }),
+    }).then(response => response.json())
+    .then(resp => {
+        document.getElementById("question_output_answer").innerHTML = `<span>${resp.answer}</span>`;
+        document.getElementById("question-input").disabled = false;
+        document.getElementById("question-button").disabled = false;
     }).catch(error => console.error('Error:', error));
     console.log("searching on feeds");
 }

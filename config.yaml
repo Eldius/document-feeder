@@ -34,7 +34,13 @@ ollama:
         # model: deepseek-r1:1.5b
         # model: deepseek-r1:7b
         # model: tinyllama:latest
-        cache_enabled: true
+        cache:
+          enabled: false
+          similarity_threshold: 0.9
+        context:
+          max_documents: 5
+          min_similarity_score: 0.9
+          enable: false
 agents:
   weather:
     lat: -22.881080667670826

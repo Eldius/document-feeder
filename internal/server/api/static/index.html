@@ -13,9 +13,8 @@
                 <hr />
                 <div class="sub">
                     <button onclick="showSection('#search_feed_container')">Search</button>
-<!--                    <div class="spacer"></div>-->
+                    <button onclick="showSection('#question_container')">Ask a Question</button>
                     <button onclick="showSection('#add_feed_container')">Add Feeds</button>
-<!--                    <div class="spacer"></div>-->
                     <button onclick="showSection('#list_feeds_container')">List Feeds</button>
                 </div>
             </header>
@@ -42,6 +41,25 @@
                     <textarea id="search-input" rows="10" cols="80"></textarea>
                     <p><button id="search-button" onclick="search()">Search</button></p>
                     <ul id="feed_search_output"></ul>
+                </article>
+            </div>
+            <div id="question_container" class="section">
+                <article id="question">
+                    <h2>Ask a Question</h2>
+                    <p><label for="question-input">Search</label></p>
+                    <textarea id="question-input" rows="10" cols="80"></textarea>
+                    <p><button id="question-button" onclick="ask()">Ask</button></p>
+                    <div id="question_output" class="box_with_border">
+                        <div id="question_output_header">
+                            <h3>Question:&nbsp;&nbsp;</h3>
+                            <span id="question_output_question"></span>
+                        </div>
+                        <hr class="hr_separator" />
+                        <div>
+                            <h3>Answer:&nbsp;&nbsp;</h3>
+                            <span id="question_output_answer"></span>
+                        </div>
+                    </div>
                 </article>
             </div>
 

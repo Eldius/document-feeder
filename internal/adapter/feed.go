@@ -24,13 +24,23 @@ var (
 )
 
 type FeedAdapter struct {
-	r                        storm.Repository
-	docs                     chromem.DocumentVectorizer
-	p                        feed.Parser
-	tmpl                     *template.Template
-	ollama                   ollama.Client
-	cacheSimilarityThreshold float32
-	cacheEnabled             bool
+	r          storm.Repository
+	docs       chromem.DocumentVectorizer
+	p          feed.Parser
+	tmpl       *template.Template
+	ollama     ollama.Client
+	cache      cacheConfig
+	contextCfg contextConfig
+}
+
+type cacheConfig struct {
+	Enabled             bool
+	SimilarityThreshold float32
+}
+type contextConfig struct {
+	SimilarityThreshold float32
+	Enabled             bool
+	MaxDocuments        int
 }
 
 func NewFeedAdapter(
@@ -41,15 +51,25 @@ func NewFeedAdapter(
 	tmpl *template.Template,
 	cacheSimilarityThreshold float32,
 	cacheEnabled bool,
+	contextSimilarityThreshold float32,
+	contextEnabled bool,
+	contextMaxDocuments int,
 ) *FeedAdapter {
 	return &FeedAdapter{
-		r:                        r,
-		p:                        p,
-		docs:                     docs,
-		tmpl:                     tmpl,
-		ollama:                   ollama,
-		cacheEnabled:             cacheEnabled,
-		cacheSimilarityThreshold: cacheSimilarityThreshold,
+		r:      r,
+		p:      p,
+		docs:   docs,
+		tmpl:   tmpl,
+		ollama: ollama,
+		cache: cacheConfig{
+			Enabled:             cacheEnabled,
+			SimilarityThreshold: cacheSimilarityThreshold,
+		},
+		contextCfg: contextConfig{
+			SimilarityThreshold: contextSimilarityThreshold,
+			Enabled:             contextEnabled,
+			MaxDocuments:        contextMaxDocuments,
+		},
 	}
 }
 
@@ -71,9 +91,15 @@ func NewFeedAdapterFromConfigs() (*FeedAdapter, error) {
 	if err != nil {
 		return nil, fmt.Errorf("creating ollama client: %w", err)
 	}
+
 	cacheEnabled := config.GetOllamaGenerationCacheEnabled()
 	cacheSimilarityThreshold := config.GetOllamaGenerationCacheSimilarityThreshold()
-	return NewFeedAdapter(r, p, d, o, tmpl, cacheSimilarityThreshold, cacheEnabled), nil
+
+	contextEnabled := config.GetOllamaGenerationContextEnabled()
+	contextMaxDocuments := config.GetOllamaGenerationContextMaxDocuments()
+	contextSimilarityThreshold := config.GetOllamaGenerationContextSimilarityThreshold()
+
+	return NewFeedAdapter(r, p, d, o, tmpl, cacheSimilarityThreshold, cacheEnabled, contextSimilarityThreshold, contextEnabled, contextMaxDocuments), nil
 }
 
 func (a *FeedAdapter) Parse(ctx context.Context, feedURL string) (*model.Feed, error) {
@@ -155,6 +181,9 @@ func (a *FeedAdapter) Search(ctx context.Context, term string, maxResults int) (
 
 	var res model.SearchResultList
 	for _, d := range docs {
+		if d.Similarity < a.contextCfg.SimilarityThreshold {
+			continue
+		}
 		sr, err := a.documentReverseSearch(ctx, d)
 		if err != nil {
 			return nil, fmt.Errorf("searching documents: %w", err)
@@ -201,7 +230,7 @@ type promptTemplateData struct {
 }
 
 func (a *FeedAdapter) AskAQuestion(ctx context.Context, question string) (string, error) {
-	if a.cacheEnabled {
+	if a.cache.Enabled {
 		cacheID, err := a.docs.FindCacheID(ctx, question)
 		if err == nil && cacheID != "" {
 			cache, err := a.r.FindGeneratedCache(ctx, cacheID)
@@ -212,9 +241,13 @@ func (a *FeedAdapter) AskAQuestion(ctx context.Context, question string) (string
 			return cache.Answer, nil
 		}
 	}
-	docs, err := a.Search(ctx, question, 2)
-	if err != nil {
-		return "", fmt.Errorf("searching documents: %w", err)
+	var docs []*model.SearchResult
+	if a.contextCfg.Enabled {
+		var err error
+		docs, err = a.SearchWithSimilarityThreshold(ctx, question, a.contextCfg.MaxDocuments, a.contextCfg.SimilarityThreshold)
+		if err != nil {
+			return "", fmt.Errorf("searching documents: %w", err)
+		}
 	}
 
 	data := promptTemplateData{Question: question, Results: docs}
@@ -233,7 +266,7 @@ func (a *FeedAdapter) AskAQuestion(ctx context.Context, question string) (string
 		return "", fmt.Errorf("generating response: %w", err)
 	}
 
-	if a.cacheEnabled {
+	if a.cache.Enabled {
 		cache := model.AnswerCache{
 			Question: question,
 			Answer:   response.Response,
@@ -252,7 +285,7 @@ func (a *FeedAdapter) AskAQuestion(ctx context.Context, question string) (string
 }
 
 func (a *FeedAdapter) AskAQuestionStream(ctx context.Context, question string, ch chan string) error {
-	if a.cacheEnabled {
+	if a.cache.Enabled {
 		cacheID, err := a.docs.FindCacheID(ctx, question)
 		if err == nil && cacheID != "" {
 			cache, err := a.r.FindGeneratedCache(ctx, cacheID)
