@@ -38,6 +38,7 @@ func NewRepositoryFromDB(db *storm.DB) (Repository, error) {
 func NewRepository() (Repository, error) {
 
 	_ = os.MkdirAll("data", dbFileMode)
+
 	db, err := storm.Open(
 		"data/feeds.db",
 		storm.BoltOptions(dbFileMode, &bbolt.Options{

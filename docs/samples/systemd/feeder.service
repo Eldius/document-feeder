@@ -1,0 +1,44 @@
+[Unit]
+Description=My knowledge management system
+After=network.target
+
+[Service]
+Type=simple
+User=eldius
+Group=eldius
+
+WorkingDirectory=/home/eldius/.bin/docs/bin
+ExecStart=/home/eldius/.bin/docs/bin/feeder-web
+
+Environment="FEEDER_TELEMETRY_ENABLED=false"
+Environment="FEEDER_XMPP_NOTIFIER_USER=user@xmpp.domain"
+Environment="FEEDER_XMPP_NOTIFIER_RECIPIENT=dest-user@xmpp.domain"
+Environment="FEEDER_XMPP_NOTIFIER_PASS=my-notifier-account-pass"
+Environment="FEEDER_TELEMETRY_TRACES_ENDPOINT=telemetry-host:4317"
+Environment="FEEDER_XMPP_NOTIFIER_WEBHOOK_URL=https://xmpp-service-host/msg"
+Environment="FEEDER_TELEMETRY_LOGS_ENDPOINT=telemetry-host:4317"
+Environment="FEEDER_TELEMETRY_METRICS_ENDPOINT=telemetry-host:4317"
+
+SyslogIdentifier=feeder-web
+Restart=always
+RestartSec=5
+StartLimitIntervalSec=0
+
+# Security Hardening
+#ProtectSystem=full
+PrivateTmp=true
+NoNewPrivileges=true
+#ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+# Optional: adjust resource accounting or sandboxing if needed
+# CPUAccounting=True
+# MemoryAccounting=True
+
+MemoryMax=1G
+# Optional: use MemoryHigh as the primary control mechanism
+MemoryHigh=750M
+
+[Install]
+WantedBy=multi-user.target

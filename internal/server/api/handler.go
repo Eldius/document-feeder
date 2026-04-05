@@ -163,7 +163,7 @@ func (h *handler) searchOnFeeds(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var resp SearchResponse
+	resp := SearchResponse{Results: make([]SearchResult, 0, len(searchResult))}
 	for _, f := range searchResult {
 		resp.Results = append(resp.Results, SearchResult{
 			FeedTitle: f.FeedTitle,

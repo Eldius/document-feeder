@@ -14,11 +14,14 @@ function showSection(selector) {
 
 }
 
-async function streamJsonData() {
+async function addFeeds() {
     let feeds = document.getElementById("feed-input").value
     document.getElementById("feed-add-button").disabled = true;
     document.getElementById("feed-input").disabled = true;
-    let feedList = feeds.split("\n")
+    let feedList = feeds.split("\n");
+
+    updateProgress(feedList);
+
     const response = await fetch("/api/feeds",
         {
             method: "POST",
@@ -32,9 +35,7 @@ async function streamJsonData() {
     const decoder = new TextDecoder();
     let accumulatedChunks = '';
 
-    document.getElementById("progress").textContent = `0 / ${feedList.length}`;
     let list = document.getElementById("feed_add_output");
-    let counter = 1;
     while (true) {
         const { done, value } = await reader.read();
         if (done) {
@@ -50,6 +51,7 @@ async function streamJsonData() {
 
         const lines = accumulatedChunks.split('\n');
         for (let i = 0; i < lines.length - 1; i++) {
+            updateProgress(feedList);
             try {
                 const jsonObject = JSON.parse(lines[i]);
                 if (jsonObject.url === "") {
@@ -59,19 +61,24 @@ async function streamJsonData() {
 
                 console.log('Parsed object:', jsonObject);
                 if (jsonObject.error != null) {
-                    list.innerHTML += `<li><span style="color:red; font-weight:bold;">!</span><a target="_blank" href="${jsonObject.url}">${jsonObject.url}</a></li>`;
+                    list.innerHTML += `<li class="feed_item"><span style="color:red; font-weight:bold;">!</span><a target="_blank" href="${jsonObject.url}">${jsonObject.url}</a></li>`;
                     continue;
                 }
-                document.getElementById("progress").innerHTML = `${counter} of ${feedList.length}`;
-                list.innerHTML += `<li>&#x2705;<a target="_blank" href="${jsonObject.url}">${jsonObject.title}</a></li>`;
+                list.innerHTML += `<li  class="feed_item">&#x2705;<a target="_blank" href="${jsonObject.url}">${jsonObject.title}</a></li>`;
             } catch (error) {
                 console.error('Error parsing JSON chunk:', error);
                 console.log("Chunk:", lines[i]);
             }
         }
         accumulatedChunks = lines[lines.length - 1]; // Keep the last, incomplete line
-        counter++;
     }
+}
+
+function updateProgress(feedList) {
+    console.log("updating progress");
+    let feedItemList = document.querySelectorAll(".feed_item");
+    let listCount = (feedItemList === null) ? 0 : feedItemList.length;
+    document.getElementById("progress").innerHTML = `${listCount} of ${feedList.length}`;
 }
 
 async function refreshFeeds() {
@@ -79,9 +86,11 @@ async function refreshFeeds() {
     fetch("/api/feeds")
         .then(response => response.json())
         .then(data => {
-            data.forEach(feed => {
-                document.getElementById("feed_list_output").innerHTML += `<li><a target="_blank" href="${feed.url}">${feed.title}</a></li>`;
-            })
+            if ((data!==null)&&(data.length !== 0)) {
+                data.forEach(feed => {
+                    document.getElementById("feed_list_output").innerHTML += `<li><a target="_blank" href="${feed.url}">${feed.title}</a></li>`;
+                })
+            }
         })
         .catch(error => console.error('Error:', error));
 
@@ -128,7 +137,7 @@ async function ask() {
 document.addEventListener('DOMContentLoaded', (event) => {
     console.log("load function called");
     console.log(JSON.stringify(event));
-    document.getElementById("feed-add-button").onclick = streamJsonData;
+    document.getElementById("feed-add-button").onclick = addFeeds;
 
     refreshFeeds().then(() => console.log("refreshed feeds"));
     showSection("#search_feed_container");

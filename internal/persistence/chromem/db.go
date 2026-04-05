@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -80,7 +82,15 @@ func NewDocumentVectorizer(
 func NewDefaultDocumentVectorizer() (DocumentVectorizer, error) {
 	embeddingModel := config.GetOllamaEmbeddingModel()
 
-	db, err := chromem.NewPersistentDB(fmt.Sprintf("data/doc_%s.db", embeddingModel), true)
+	dbPath := fmt.Sprintf("data/doc_%s.db", embeddingModel)
+	dbPath, err := filepath.Abs(dbPath)
+	if err != nil {
+		return nil, fmt.Errorf("getting absolute path: %w", err)
+	}
+
+	_ = os.MkdirAll(filepath.Dir(dbPath), 0755)
+
+	db, err := chromem.NewPersistentDB(dbPath, true)
 	if err != nil {
 		return nil, fmt.Errorf("opening db: %w", err)
 	}
