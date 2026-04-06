@@ -100,6 +100,17 @@ refresh:
 				refresh -i
 
 
+analyse-sample:
+	go run \
+		./cmd/cli \
+			feed \
+				analyze \
+					--no-cache \
+					-i \
+					--enable-notification \
+					--link "https://computaria.gitlab.io/blog/feed.xml"
+
+
 search:
 	go run \
 		./cmd/cli \

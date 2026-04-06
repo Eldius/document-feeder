@@ -4,9 +4,20 @@ import (
 	"slices"
 	"time"
 )
-
 type SearchResultList struct {
 	Results []*SearchResult `json:"results"`
+}
+
+type AnalysisResult struct {
+	Subject   string   `json:"subject"`
+	Summary   string   `json:"summary"`
+	Keywords  []string `json:"keywords"`
+	Sentiment string   `json:"sentiment"`
+}
+
+type ArticleAnalysis struct {
+	ArticleLink string         `json:"articleLink" storm:"id"`
+	Analysis    AnalysisResult `json:"analysis"`
 }
 
 func (r *SearchResultList) Sorted() []*SearchResult {

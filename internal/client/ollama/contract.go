@@ -105,6 +105,8 @@ type GenerateResponse struct {
 type GenerateRequest struct {
 	Model     string         `json:"model"`
 	Prompt    string         `json:"prompt"`
+	System    string         `json:"system,omitempty"`
+	Format    string         `json:"format,omitempty"`
 	Stream    bool           `json:"stream"`
 	KeepAlive int            `json:"keep_alive"`
 	Options   OptionsRequest `json:"options"`

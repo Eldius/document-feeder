@@ -2,8 +2,6 @@
 log:
     level: debug
     format: json
-    redacted_keys:
-      - Authorization
 ollama:
     endpoint: http://192.168.0.185:11434
     # Default configuration for nomic-embed-text (context length: 2048)
@@ -41,6 +39,9 @@ ollama:
           max_documents: 5
           min_similarity_score: 0.9
           enable: false
+    article_analysis:
+      model: phi3:3.8b-mini-4k-instruct-q4_K_M
+      # model: llama3:8b-instruct-q4_K_S
 agents:
   weather:
     lat: -22.881080667670826

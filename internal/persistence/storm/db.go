@@ -25,6 +25,8 @@ type Repository interface {
 	SaveGeneratedCache(context.Context, *model.AnswerCache) error
 	FindGeneratedCache(context.Context, string) (*model.AnswerCache, error)
 	Delete(context.Context, *model.Feed) error
+	SaveArticleAnalysis(context.Context, *model.ArticleAnalysis) error
+	FindArticleAnalysis(context.Context, string) (*model.ArticleAnalysis, error)
 }
 
 type repository struct {
@@ -107,4 +109,16 @@ func (r *repository) FindGeneratedCache(_ context.Context, id string) (*model.An
 
 func (r *repository) Delete(_ context.Context, feed *model.Feed) error {
 	return r.db.DeleteStruct(feed)
+}
+
+func (r *repository) SaveArticleAnalysis(_ context.Context, analysis *model.ArticleAnalysis) error {
+	return r.db.Save(analysis)
+}
+
+func (r *repository) FindArticleAnalysis(_ context.Context, link string) (*model.ArticleAnalysis, error) {
+	var analysis model.ArticleAnalysis
+	if err := r.db.Select(q.Eq("ArticleLink", link)).First(&analysis); err != nil {
+		return nil, fmt.Errorf("finding article analysis: %w", err)
+	}
+	return &analysis, nil
 }

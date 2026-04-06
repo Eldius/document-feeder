@@ -3,6 +3,7 @@ package adapter
 import (
 	"context"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"text/template"
@@ -31,6 +32,13 @@ type FeedAdapter struct {
 	ollama     ollama.Client
 	cache      cacheConfig
 	contextCfg contextConfig
+	models     *feedAdapterModels
+}
+
+type feedAdapterModels struct {
+	articleAnalysisModel string
+	generationModel      string
+	embeddingModel       string
 }
 
 type cacheConfig struct {
@@ -54,6 +62,7 @@ func NewFeedAdapter(
 	contextSimilarityThreshold float32,
 	contextEnabled bool,
 	contextMaxDocuments int,
+	models *feedAdapterModels,
 ) *FeedAdapter {
 	return &FeedAdapter{
 		r:      r,
@@ -61,6 +70,7 @@ func NewFeedAdapter(
 		docs:   docs,
 		tmpl:   tmpl,
 		ollama: ollama,
+		models: models,
 		cache: cacheConfig{
 			Enabled:             cacheEnabled,
 			SimilarityThreshold: cacheSimilarityThreshold,
@@ -99,7 +109,12 @@ func NewFeedAdapterFromConfigs() (*FeedAdapter, error) {
 	contextMaxDocuments := config.GetOllamaGenerationContextMaxDocuments()
 	contextSimilarityThreshold := config.GetOllamaGenerationContextSimilarityThreshold()
 
-	return NewFeedAdapter(r, p, d, o, tmpl, cacheSimilarityThreshold, cacheEnabled, contextSimilarityThreshold, contextEnabled, contextMaxDocuments), nil
+	models := &feedAdapterModels{
+		generationModel:      config.GetOllamaGenerationModel(),
+		embeddingModel:       config.GetOllamaEmbeddingModel(),
+		articleAnalysisModel: config.GetOllamaArticleAnalysisModel(),
+	}
+	return NewFeedAdapter(r, p, d, o, tmpl, cacheSimilarityThreshold, cacheEnabled, contextSimilarityThreshold, contextEnabled, contextMaxDocuments, models), nil
 }
 
 func (a *FeedAdapter) Parse(ctx context.Context, feedURL string) (*model.Feed, error) {
@@ -370,4 +385,75 @@ func (a *FeedAdapter) deleteFeed(ctx context.Context, f *model.Feed) error {
 		return err
 	}
 	return nil
+}
+
+func (a *FeedAdapter) AnalyzeArticle(ctx context.Context, article model.Article, skipCache bool) (*model.AnalysisResult, error) {
+	if !skipCache {
+		analysis, err := a.r.FindArticleAnalysis(ctx, article.Link)
+		if err == nil && analysis != nil {
+			return &analysis.Analysis, nil
+		}
+	}
+
+	var b strings.Builder
+	if err := a.tmpl.ExecuteTemplate(&b, "analyze.tmpl", article); err != nil {
+		return nil, fmt.Errorf("executing template: %w", err)
+	}
+
+	response, err := a.ollama.GenerateCall(ctx, ollama.GenerateRequest{
+		Prompt: b.String(),
+		Format: "json",
+		Model:  a.models.articleAnalysisModel,
+		Options: ollama.OptionsRequest{
+			Temperature: 0.1,
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("generating analysis: %w", err)
+	}
+
+	var result model.AnalysisResult
+	if err := json.Unmarshal([]byte(response.Response), &result); err != nil {
+		return nil, fmt.Errorf("unmarshalling analysis: %w", err)
+	}
+
+	if err := a.r.SaveArticleAnalysis(ctx, &model.ArticleAnalysis{
+		ArticleLink: article.Link,
+		Analysis:    result,
+	}); err != nil {
+		logs.NewLogger(ctx).WithError(err).Warn("failed to save article analysis")
+	}
+
+	return &result, nil
+}
+
+func (a *FeedAdapter) AnalyzeFeed(ctx context.Context, feedLink string, skipCache bool) (map[string]*model.AnalysisResult, error) {
+	feeds, err := a.r.All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting all feeds: %w", err)
+	}
+
+	var f *model.Feed
+	for _, feed_ := range feeds {
+		if feed_.FeedLink == feedLink {
+			f = feed_
+			break
+		}
+	}
+
+	if f == nil {
+		return nil, fmt.Errorf("feed not found: %s", feedLink)
+	}
+
+	results := make(map[string]*model.AnalysisResult)
+	for _, item := range f.Items {
+		analysis, err := a.AnalyzeArticle(ctx, item, skipCache)
+		if err != nil {
+			logs.NewLogger(ctx).WithError(err).WithExtraData("article", item.Link).Warn("failed to analyze article")
+			continue
+		}
+		results[item.Link] = analysis
+	}
+
+	return results, nil
 }

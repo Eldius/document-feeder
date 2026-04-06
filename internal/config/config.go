@@ -64,6 +64,10 @@ var (
 		Key:   "ollama.generation.context.max_documents",
 		Value: 5,
 	}
+	OllamaArticleAnalysisModelProp = setup.Prop{
+		Key:   "ollama.article_analysis.model",
+		Value: "llama3:8b-instruct-q4_K_M",
+	}
 	XmppNotifierURLProp = setup.Prop{
 		Key:   "xmpp.notifier.webhook_url",
 		Value: "",
@@ -181,4 +185,8 @@ func GetOllamaGenerationContextMaxDocuments() int {
 
 func GetOllamaGenerationContextSimilarityThreshold() float32 {
 	return float32(viper.GetFloat64(OllamaGenerationContextSimilarityThresholdProp.Key))
+}
+
+func GetOllamaArticleAnalysisModel() string {
+	return viper.GetString(OllamaArticleAnalysisModelProp.Key)
 }
